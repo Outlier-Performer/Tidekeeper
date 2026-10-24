@@ -37,7 +37,7 @@ class TidekeeperGame:
         self.player = Player()
         self.camera = Camera()
         self.camera.update((self.player.x, self.player.y), 1.0)
-        self.pollution = PollutionField()
+        self.pollution = PollutionField(initial_item_count=4)
         self.ui = GameUI()
         self.wildlife = WildlifeSystem()
         self.random = random.Random()
@@ -112,7 +112,9 @@ class TidekeeperGame:
                     elif event.key == pygame.K_p:
                         self._launch_play_window()
                     elif event.key == pygame.K_f and self.mode == EXPLORE_MODE:
-                        self.wildlife.observe_nearby((self.player.x, self.player.y))
+                        profile = self._nearby_info_profile()
+                        if profile is not None:
+                            self.wildlife.open_info(profile)
                     elif event.key == pygame.K_ESCAPE:
                         self.state = MENU
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == MENU:
@@ -165,9 +167,16 @@ class TidekeeperGame:
         if self.state == MENU:
             self.ui.draw_menu(self.screen, pygame.mouse.get_pos())
         else:
+            self.poi_hitboxes.extend(self.ocean.info_hitboxes(self.camera))
             self.pollution.draw(self.screen, self.camera)
             for enemy in self.enemies:
                 enemy.draw(self.screen, self.camera)
+                profile = self.wildlife.profile_for("moon_jellyfish")
+                if self.camera.sees((enemy.x, enemy.y), 60):
+                    x, y = self.camera.world_to_screen((enemy.x, enemy.y))
+                    self.poi_hitboxes.append(
+                        (pygame.Rect(x - 28, y - 36, 56, 72), profile)
+                    )
             self.wildlife.draw(self.screen, self.camera, self.ocean.time, self.poi_hitboxes)
             for item in self.pollution.items:
                 if self.camera.sees((item.x, item.y), 30):
@@ -189,13 +198,14 @@ class TidekeeperGame:
                     self.current_zone.name,
                     depth_at(self.player.y),
                     len(self.wildlife.discovered),
+                    boost_energy=self.player.boost_energy,
                 )
                 if self.zone_toast_timer > 0:
                     self.ui.draw_zone_toast(self.screen, self.current_zone.name)
                 if self.mode == EXPLORE_MODE:
                     self.wildlife.draw_prompt(
                         self.screen,
-                        self.wildlife.nearby((self.player.x, self.player.y)),
+                        self._nearby_info_profile(),
                     )
                 if self.wildlife.open_profile is not None:
                     self.ui.draw_discovery_card(
@@ -213,6 +223,20 @@ class TidekeeperGame:
             if hitbox.collidepoint(screen_position):
                 return profile
         return None
+
+    def _nearby_info_profile(self) -> dict[str, object] | None:
+        """Find the nearest visible information target within interaction range."""
+        player_screen = self.camera.world_to_screen((self.player.x, self.player.y))
+        nearest_profile = None
+        nearest_distance = settings.WILDLIFE_OBSERVE_RADIUS
+        for hitbox, profile in self.poi_hitboxes:
+            closest_x = max(hitbox.left, min(player_screen[0], hitbox.right))
+            closest_y = max(hitbox.top, min(player_screen[1], hitbox.bottom))
+            distance = ((player_screen[0] - closest_x) ** 2 + (player_screen[1] - closest_y) ** 2) ** 0.5
+            if distance <= nearest_distance:
+                nearest_profile = profile
+                nearest_distance = distance
+        return nearest_profile
 
     def run(self) -> None:
         running = True

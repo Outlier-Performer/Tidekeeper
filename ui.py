@@ -74,9 +74,9 @@ class GameUI:
             (settings.WIDTH // 2, 238),
         )
         descriptions = {
-            "easy": ("EASY", "10 pieces  |  4 jellyfish"),
-            "medium": ("MEDIUM", "15 pieces  |  7 jellyfish"),
-            "hard": ("HARD", "20 pieces  |  10 jellyfish"),
+            "easy": ("EASY", "10 pieces  |  6 jellyfish"),
+            "medium": ("MEDIUM", "15 pieces  |  9 jellyfish"),
+            "hard": ("HARD", "20 pieces  |  12 jellyfish"),
         }
         colors = {
             "easy": (94, 194, 158),
@@ -118,6 +118,7 @@ class GameUI:
         depth: int,
         discoveries: int,
         target_score: int | None = None,
+        boost_energy: float = 1.0,
     ) -> None:
         pygame.draw.rect(screen, (4, 38, 65), (0, 0, settings.WIDTH, settings.HUD_HEIGHT))
         pygame.draw.line(screen, (84, 198, 193), (0, settings.HUD_HEIGHT - 2), (settings.WIDTH, settings.HUD_HEIGHT - 2), 2)
@@ -130,6 +131,7 @@ class GameUI:
         if mode == "explore":
             self._text(screen, self.small_font, "P  OPEN PLAY WINDOW", settings.PALE_AQUA, (131, 74))
             self._text(screen, self.small_font, "CLICK TO LEARN  |  F NEARBY", settings.WHITE, (370, 20))
+            self._draw_boost_bar(screen, boost_energy)
             return
 
         self._text(screen, self.small_font, "HEALTH", settings.PALE_AQUA, (66, 74))
@@ -145,6 +147,17 @@ class GameUI:
         fill.width = round(bar.width * max(0.0, min(1.0, reef_health)))
         if fill.width:
             pygame.draw.rect(screen, (86, 222, 177), fill, border_radius=8)
+        pygame.draw.rect(screen, (118, 211, 202), bar, 2, border_radius=8)
+        self._draw_boost_bar(screen, boost_energy)
+
+    def _draw_boost_bar(self, screen: pygame.Surface, energy: float) -> None:
+        self._text(screen, self.small_font, "BOOST", settings.PALE_AQUA, (604, 74))
+        bar = pygame.Rect(645, 66, 122, 16)
+        pygame.draw.rect(screen, (24, 74, 89), bar, border_radius=8)
+        fill = bar.copy()
+        fill.width = round(bar.width * max(0.0, min(1.0, energy)))
+        if fill.width:
+            pygame.draw.rect(screen, (90, 216, 233), fill, border_radius=8)
         pygame.draw.rect(screen, (118, 211, 202), bar, 2, border_radius=8)
 
     @staticmethod

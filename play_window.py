@@ -19,19 +19,19 @@ ARENA_START = (2000.0, 1500.0)
 DIFFICULTIES = {
     "easy": {
         "target_score": 10,
-        "jellyfish_count": 4,
+        "jellyfish_count": 6,
         "shark_speed_multiplier": 0.9,
         "shark_tracking_distance": 380,
     },
     "medium": {
         "target_score": 15,
-        "jellyfish_count": 7,
+        "jellyfish_count": 9,
         "shark_speed_multiplier": 1.0,
         "shark_tracking_distance": 440,
     },
     "hard": {
         "target_score": 20,
-        "jellyfish_count": 10,
+        "jellyfish_count": 12,
         "shark_speed_multiplier": 1.12,
         "shark_tracking_distance": 500,
     },
@@ -104,7 +104,7 @@ class CleanupGame:
             Jellyfish(
                 self.random.randint(ARENA_BOUNDS[0] + 100, ARENA_BOUNDS[2] - 100),
                 self.random.randint(ARENA_BOUNDS[1] + 100, ARENA_BOUNDS[3] - 100),
-                speed=self.random.uniform(0.8, 1.25),
+                speed=self.random.uniform(0.55, 0.85),
                 world_bounds=ARENA_BOUNDS,
             )
             for _ in range(int(options["jellyfish_count"]))
@@ -201,6 +201,7 @@ class CleanupGame:
                 depth_at(self.player.y),
                 0,
                 self.target_score,
+                self.player.boost_energy,
             )
         else:
             self.ui.draw_result(self.screen, self.state == "victory", self.score)

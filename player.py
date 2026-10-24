@@ -40,6 +40,12 @@ class Player:
         self.facing = 1
         self.boosting = False
         self.swim_vertical = 0.0
+        self.swimming = False
+        self.swim_phase = 0.0
+        self.move_dx = 0.0
+        self.move_dy = 0.0
+        self.boost_energy = 1.0
+        self.boost_recharge_timer = 0.0
         self.bubble_timer = 0.0
         self.bubbles.clear()
 
@@ -50,40 +56,64 @@ class Player:
         return pygame.Rect(round(self.x - size / 2), round(self.y - size / 2), size, size)
 
     def update(self, dt: float, keys: pygame.key.ScancodeWrapper) -> None:
-        dx = float(keys[pygame.K_d] or keys[pygame.K_RIGHT]) - float(
-            keys[pygame.K_a] or keys[pygame.K_LEFT]
+        direction = pygame.Vector2(
+            int(bool(keys[pygame.K_d] or keys[pygame.K_RIGHT]))
+            - int(bool(keys[pygame.K_a] or keys[pygame.K_LEFT])),
+            int(bool(keys[pygame.K_s] or keys[pygame.K_DOWN]))
+            - int(bool(keys[pygame.K_w] or keys[pygame.K_UP])),
         )
-        dy = float(keys[pygame.K_s] or keys[pygame.K_DOWN]) - float(
-            keys[pygame.K_w] or keys[pygame.K_UP]
-        )
+        self.swimming = direction.length_squared() > 0
+        if self.swimming:
+            direction.normalize_ip()
+            self.move_dx, self.move_dy = direction
+            if direction.x != 0:
+                self.facing = 1 if direction.x > 0 else -1
+        else:
+            self.move_dx = 0.0
+            self.move_dy = 0.0
+        self.swim_vertical += (self.move_dy - self.swim_vertical) * min(1.0, dt * 5.0)
 
-        length = math.hypot(dx, dy)
-        if length:
-            dx /= length
-            dy /= length
-            self.facing = 1 if dx >= 0 else -1
-        self.swim_vertical += (dy - self.swim_vertical) * min(1.0, dt * 5.0)
+        boost_requested = bool(keys[pygame.K_SPACE])
+        self.boosting = boost_requested and self.boost_energy > 0 and self.swimming
+        if self.boosting:
+            self.boost_energy = max(
+                0.0,
+                self.boost_energy - dt / settings.PLAYER_BOOST_DRAIN_SECONDS,
+            )
+            self.boost_recharge_timer = settings.PLAYER_BOOST_RECHARGE_DELAY
+        elif not boost_requested:
+            self.boost_recharge_timer = max(0.0, self.boost_recharge_timer - dt)
+            if self.boost_recharge_timer == 0:
+                self.boost_energy = min(
+                    1.0,
+                    self.boost_energy + dt / settings.PLAYER_BOOST_RECHARGE_SECONDS,
+                )
 
-        self.boosting = bool(keys[pygame.K_SPACE])
         speed = settings.PLAYER_SPEED
         if self.boosting:
             speed *= settings.PLAYER_BOOST_MULTIPLIER
 
-        self.x += dx * speed * dt
-        self.y += dy * speed * dt
+        self.x += self.move_dx * speed * dt
+        self.y += self.move_dy * speed * dt
         left, top, right, bottom = self.world_bounds
         self.x = max(left + self.radius + 8, min(right - self.radius - 8, self.x))
         self.y = max(top + self.radius + 8, min(bottom - self.radius - 12, self.y))
-        self.animation_time += dt * (1.8 if length else 0.7)
+        self.animation_time += dt * (1.8 if self.swimming else 0.7)
+        self.swim_phase += dt * (9.0 if self.swimming else 2.2)
         self.invulnerability_timer = max(0.0, self.invulnerability_timer - dt)
 
         interval = 0.12 if self.boosting else 0.28
-        if length:
+        if self.swimming:
             self.bubble_timer += dt
             while self.bubble_timer >= interval:
                 self.bubble_timer -= interval
                 self.bubbles.append(
-                    [self.x - self.facing * 20, self.y + 4, 0.75, self.animation_time]
+                    [
+                        self.x - self.move_dx * 20,
+                        self.y - self.move_dy * 20,
+                        0.75,
+                        self.animation_time,
+                    ]
                 )
         else:
             self.bubble_timer = 0.0
@@ -107,10 +137,18 @@ class Player:
         if self.invulnerability_timer > 0 and int(self.invulnerability_timer * 12) % 2 == 0:
             return
 
-        bob = math.sin(self.animation_time * 4) * 2.5
+        bob = (
+            math.sin(self.swim_phase) * 3.2
+            if self.swimming
+            else math.sin(self.animation_time * 2.5) * 1.4
+        )
         x, y = camera.world_to_screen((self.x, self.y + bob))
         image = self.sprite_left if self.facing < 0 else self.sprite_right
-        image = rotated_sprite(image, -self.swim_vertical * 7)
+        kick = math.sin(self.swim_phase) * 2.5 if self.swimming else 0.0
+        image = rotated_sprite(
+            image,
+            -self.swim_vertical * 7 * self.facing + kick,
+        )
         screen.blit(image, image.get_rect(center=(x, y)))
 
         for bubble_x, bubble_y, life, _phase in self.bubbles:
@@ -120,6 +158,12 @@ class Player:
             screen.blit(bubble, bubble.get_rect(center=bubble_position))
 
         if self.boosting:
-            puff_x = x - self.facing * 39
-            pygame.draw.circle(screen, (121, 227, 238), (puff_x, y), 5)
-            pygame.draw.circle(screen, (186, 246, 244), (puff_x - self.facing * 8, y - 5), 3)
+            puff_x = round(x - self.move_dx * 39)
+            puff_y = round(y - self.move_dy * 39)
+            pygame.draw.circle(screen, (121, 227, 238), (puff_x, puff_y), 5)
+            pygame.draw.circle(
+                screen,
+                (186, 246, 244),
+                (round(puff_x - self.move_dx * 8), round(puff_y - self.move_dy * 8)),
+                3,
+            )

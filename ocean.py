@@ -7,6 +7,7 @@ import pygame
 
 from art import load_sprite, rotated_sprite, scaled_sprite
 from camera import Camera
+from ecology_data import ENVIRONMENT_PROFILES
 import settings
 from world import HabitatZone, ZONES, water_color_at, zone_at
 
@@ -209,6 +210,62 @@ class Ocean:
         self._draw_coral(screen, camera)
         self._draw_fish(screen, camera)
         self._draw_bubbles(screen, camera)
+
+    def info_hitboxes(self, camera: Camera) -> list[tuple[pygame.Rect, dict[str, object]]]:
+        hitboxes: list[tuple[pygame.Rect, dict[str, object]]] = []
+        for x, y, kind, width, height, phase in self.coral:
+            if camera.sees((x, y - height / 2), max(width, height)):
+                sx, sy = camera.world_to_screen((x, y))
+                image = scaled_sprite(self.coral_variants[kind][10], (width, height))
+                image = rotated_sprite(image, math.sin(self.time * 0.7 + phase) * 2)
+                hitboxes.append(
+                    (image.get_rect(midbottom=(sx, sy)), ENVIRONMENT_PROFILES["coral"])
+                )
+
+        for x, y, width, height, _kind, _angle in self.rocks:
+            if camera.sees((x, y), max(width, height)):
+                sx, sy = camera.world_to_screen((x, y))
+                hitboxes.append(
+                    (
+                        pygame.Rect(sx - width // 2, sy - height, width, height),
+                        ENVIRONMENT_PROFILES["reef"],
+                    )
+                )
+
+        for x, base_y, height, phase, kind in self.seaweed:
+            if not camera.sees((x, base_y - height / 2), height):
+                continue
+            source = self.plant_sprites[kind]
+            size = (
+                round(height * source.get_width() / source.get_height()),
+                height,
+            )
+            image = scaled_sprite(source, size)
+            image = rotated_sprite(image, math.sin(self.time * 0.8 + phase) * 7)
+            sx = round(x - camera.x * 1.035)
+            sy = round(base_y - camera.y)
+            profile = ENVIRONMENT_PROFILES[kind]
+            hitboxes.append((image.get_rect(midbottom=(sx, sy)), profile))
+
+        for x, y, travel, speed, species, phase, size in self.fish:
+            offset_x = math.sin(self.time * speed + phase) * travel
+            offset_y = math.sin(self.time * speed * 0.8 + phase) * 13
+            world_position = (x + offset_x, y + offset_y)
+            if not camera.sees(world_position, 35):
+                continue
+            sx, sy = camera.world_to_screen(world_position)
+            base = self.fish_sprites[species]
+            width = round(size * 2.5)
+            height = round(width * base.get_height() / base.get_width())
+            image = scaled_sprite(base, (width, height))
+            image = rotated_sprite(image, math.sin(self.time * speed * 2 + phase) * 4)
+            hitboxes.append(
+                (
+                    image.get_rect(center=(sx, sy)),
+                    ENVIRONMENT_PROFILES[species],
+                )
+            )
+        return hitboxes
 
     def _draw_water(self, screen: pygame.Surface, camera: Camera) -> None:
         band_height = 12

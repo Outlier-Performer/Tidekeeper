@@ -46,7 +46,7 @@ class Jellyfish:
                 self.heading += self.random.uniform(-math.pi, math.pi)
                 self.wander_timer = self.random.uniform(0.45, 2.0)
                 self.wander_speed = self.random.uniform(0.55, 1.45)
-            travel = 68 * self.speed * self.wander_speed * dt
+            travel = 42 * self.speed * self.wander_speed * dt
             self.x += math.cos(self.heading) * travel
             self.y += math.sin(self.heading) * travel
             if self.x < left + 45 or self.x > right - 45:
@@ -144,4 +144,5 @@ class Shark:
             return
         x, y = camera.world_to_screen((self.x, self.y))
         image = self.sprite_right if self.facing > 0 else self.sprite_left
+        image = rotated_sprite(image, math.sin(self.time * 5.5) * 2.0)
         screen.blit(image, image.get_rect(center=(x, y)))

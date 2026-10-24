@@ -12,7 +12,10 @@ from camera import Camera
 
 class WildlifeSystem:
     def __init__(self) -> None:
-        self.organisms = list(WILDLIFE_PROFILES)
+        self.organisms = [
+            profile for profile in WILDLIFE_PROFILES
+            if profile["id"] != "plastic_bottle" and profile["position"] != (0, 0)
+        ]
         self.discovered: set[str] = set()
         self.open_profile: dict[str, object] | None = None
         self.prompt_font = pygame.font.SysFont("Avenir Next", 19, bold=True)
@@ -49,10 +52,23 @@ class WildlifeSystem:
         if index is None:
             index = self.organisms.index(profile)
         phase = index * 1.7
+        if profile["id"] == "bottlenose_dolphin":
+            return (
+                float(x) + math.sin(self.time * 1.3 + phase) * 300,
+                float(y) + math.sin(self.time * 2.1 + phase) * 85,
+            )
+        if profile["id"] == "bull_shark":
+            return (
+                float(x) + math.sin(self.time * 0.34 + phase) * 145,
+                float(y) + math.sin(self.time * 0.53 + phase) * 34,
+            )
         return (
             float(x) + math.sin(self.time * 0.42 + phase) * 46,
             float(y) + math.sin(self.time * 0.68 + phase) * 13,
         )
+
+    def profile_for(self, profile_id: str) -> dict[str, object]:
+        return next(profile for profile in WILDLIFE_PROFILES if profile["id"] == profile_id)
 
     def open_info(self, profile: dict[str, object]) -> None:
         self.open_profile = profile
@@ -93,12 +109,28 @@ class WildlifeSystem:
             )
             if hitboxes is not None:
                 hitboxes.append((hitbox, organism))
-            self.draw_card_illustration(screen, organism, (x, y), time)
+            dolphin_facing_left = (
+                organism["id"] in ("bottlenose_dolphin", "bull_shark")
+                and math.cos(
+                    self.time * (1.3 if organism["id"] == "bottlenose_dolphin" else 0.34)
+                    + index * 1.7
+                ) < 0
+            )
+            self.draw_card_illustration(
+                screen,
+                organism,
+                (x, y),
+                time,
+                dolphin_facing_left,
+            )
 
     @staticmethod
     def _illustration_hitbox_size(illustration: str) -> tuple[int, int]:
         sizes = {
-            "dolphin": (112, 70),
+            "dolphin": (148, 94),
+            "jellyfish": (64, 86),
+            "blue_tang": (88, 62),
+            "queen_angelfish": (88, 62),
             "turtle": (78, 70),
             "snapper": (94, 66),
             "whale": (114, 70),
@@ -220,7 +252,7 @@ class WildlifeSystem:
     def draw_prompt(self, screen: pygame.Surface, nearby: dict[str, object] | None) -> None:
         if nearby is None or self.open_profile is not None:
             return
-        label = self.prompt_font.render("Click to learn  |  F to observe nearby", True, settings.WHITE)
+        label = self.prompt_font.render("Click to learn  |  Approach and press F for info", True, settings.WHITE)
         rect = label.get_rect(center=(settings.WIDTH // 2, settings.HEIGHT - 60))
         panel = rect.inflate(28, 18)
         pygame.draw.rect(screen, (5, 39, 63), panel, border_radius=10)
@@ -232,12 +264,17 @@ class WildlifeSystem:
         profile: dict[str, object],
         center: tuple[int, int],
         time: float = 0.0,
+        facing_left: bool = False,
     ) -> None:
         """Draw the same recognizable artwork in the world and its information card."""
         x, y = center
         illustration = str(profile["illustration"])
         sprites = {
             "dolphin": ("animals", "bottlenose_dolphin", (110, 66)),
+            "jellyfish": ("animals", "moon_jellyfish", (52, 72)),
+            "blue_tang": ("fish", "blue_tang", (78, 54)),
+            "queen_angelfish": ("fish", "queen_angelfish", (78, 54)),
+            "sargassum": ("plants", "sargassum", (66, 73)),
             "turtle": ("animals", "green_sea_turtle", (76, 68)),
             "snapper": ("fish", "red_snapper", (92, 64)),
             "whale": ("animals", "sperm_whale", (112, 66)),
@@ -247,6 +284,8 @@ class WildlifeSystem:
         if illustration in sprites:
             category, name, size = sprites[illustration]
             image = scaled_sprite(load_sprite(category, name), size)
+            if facing_left:
+                image = pygame.transform.flip(image, True, False)
             screen.blit(image, image.get_rect(center=(x, y)))
         elif illustration == "reef":
             rock = scaled_sprite(load_sprite("terrain", "limestone_reef"), (78, 48))
