@@ -5,6 +5,7 @@ import random
 
 import pygame
 
+from camera import Camera
 import settings
 
 
@@ -28,17 +29,25 @@ class PollutionItem:
     def update(self, dt: float) -> None:
         self.age += dt
 
-    def draw(self, screen: pygame.Surface) -> None:
-        x, y = round(self.x), round(self.y)
+    def draw(self, screen: pygame.Surface, camera: Camera) -> None:
+        if not camera.sees((self.x, self.y), 30):
+            return
+        x, y = camera.world_to_screen((self.x, self.y))
         if self.kind == "bottle":
             pygame.draw.rect(screen, (120, 224, 205), (x - 7, y - 12, 14, 25), border_radius=4)
             pygame.draw.rect(screen, (217, 255, 241), (x - 4, y - 16, 8, 6), border_radius=2)
             pygame.draw.rect(screen, (75, 169, 166), (x - 5, y - 2, 10, 2))
-        else:
+        elif self.kind == "can":
             pygame.draw.rect(screen, (203, 180, 115), (x - 9, y - 11, 18, 23), border_radius=5)
             pygame.draw.ellipse(screen, (236, 215, 157), (x - 9, y - 12, 18, 6))
             pygame.draw.ellipse(screen, (145, 132, 99), (x - 9, y + 6, 18, 6))
             pygame.draw.line(screen, (244, 234, 195), (x - 4, y - 6), (x + 4, y - 6), 2)
+        else:
+            pygame.draw.rect(screen, (207, 177, 113), (x - 13, y - 10, 26, 20), 2)
+            for offset in (-8, 0, 8):
+                pygame.draw.line(screen, (222, 202, 148), (x + offset, y - 9), (x + offset, y + 9), 1)
+            for offset in (-5, 3):
+                pygame.draw.line(screen, (222, 202, 148), (x - 12, y + offset), (x + 12, y + offset), 1)
 
         pygame.draw.circle(screen, settings.POLLUTION_YELLOW, (x + 12, y - 12), 3)
 
@@ -52,38 +61,53 @@ class PickupEffect:
     def update(self, dt: float) -> None:
         self.age += dt
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface, camera: Camera) -> None:
+        if not camera.sees((self.x, self.y), 40):
+            return
         progress = min(1.0, self.age / 0.45)
         radius = round(7 + progress * 26)
-        pygame.draw.circle(screen, (175, 255, 211), (round(self.x), round(self.y)), radius, 2)
+        x, y = camera.world_to_screen((self.x, self.y))
+        pygame.draw.circle(screen, (175, 255, 211), (x, y), radius, 2)
 
 
 class PollutionField:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        world_bounds: tuple[int, int, int, int] | None = None,
+    ) -> None:
         self.random = random.Random()
         self.items: list[PollutionItem] = []
         self.effects: list[PickupEffect] = []
         self.spawn_timer = 0.0
+        self.world_bounds = world_bounds or (
+            0,
+            settings.HUD_HEIGHT,
+            settings.WORLD_WIDTH,
+            settings.WORLD_HEIGHT,
+        )
         self.reset()
 
-    def reset(self) -> None:
+    def reset(self, player_position: tuple[float, float] = (500.0, 480.0)) -> None:
         self.items.clear()
         self.effects.clear()
         self.spawn_timer = 0.0
         for _ in range(7):
-            self._spawn_item()
+            self._spawn_item(player_position)
 
-    def _spawn_item(self) -> None:
-        x = self.random.randint(42, settings.WIDTH - 42)
-        y = self.random.randint(settings.HUD_HEIGHT + 45, settings.OCEAN_FLOOR_Y - 55)
-        kind = self.random.choice(("bottle", "can"))
+    def _spawn_item(self, player_position: tuple[float, float]) -> None:
+        x = round(player_position[0] + self.random.randint(-settings.ITEM_SPAWN_RADIUS_X, settings.ITEM_SPAWN_RADIUS_X))
+        y = round(player_position[1] + self.random.randint(-settings.ITEM_SPAWN_RADIUS_Y, settings.ITEM_SPAWN_RADIUS_Y))
+        left, top, right, bottom = self.world_bounds
+        x = max(left + 42, min(right - 42, x))
+        y = max(top + 45, min(bottom - 55, y))
+        kind = self.random.choices(("bottle", "can", "net"), weights=(5, 4, 1), k=1)[0]
         self.items.append(PollutionItem(x, y, kind))
 
-    def update(self, dt: float) -> None:
+    def update(self, dt: float, player_position: tuple[float, float]) -> None:
         self.spawn_timer += dt
         while self.spawn_timer >= settings.ITEM_SPAWN_INTERVAL and len(self.items) < settings.MAX_POLLUTION_ITEMS:
             self.spawn_timer -= settings.ITEM_SPAWN_INTERVAL
-            self._spawn_item()
+            self._spawn_item(player_position)
 
         for item in self.items:
             item.update(dt)
@@ -105,8 +129,8 @@ class PollutionField:
         self.items = remaining
         return collected
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface, camera: Camera) -> None:
         for item in self.items:
-            item.draw(screen)
+            item.draw(screen, camera)
         for effect in self.effects:
-            effect.draw(screen)
+            effect.draw(screen, camera)

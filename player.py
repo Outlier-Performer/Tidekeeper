@@ -4,22 +4,44 @@ import math
 
 import pygame
 
+from art import load_sprite, rotated_sprite, scaled_sprite
+from camera import Camera
 import settings
 
 
 class Player:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        world_bounds: tuple[float, float, float, float] | None = None,
+        start_position: tuple[float, float] = (500.0, 480.0),
+    ) -> None:
+        diver_art = scaled_sprite(load_sprite("player", "diver"), (84, 58))
+        self.sprite_right = diver_art
+        self.sprite_left = pygame.transform.flip(diver_art, True, False)
+        self.bubble_sprite = load_sprite("effects", "bubble")
+        self.swim_vertical = 0.0
+        self.bubble_timer = 0.0
+        self.bubbles: list[list[float]] = []
         self.radius = settings.PLAYER_RADIUS
+        self.world_bounds = world_bounds or (
+            0.0,
+            0.0,
+            float(settings.WORLD_WIDTH),
+            float(settings.WORLD_HEIGHT),
+        )
+        self.start_position = start_position
         self.reset()
 
     def reset(self) -> None:
-        self.x = settings.WIDTH * 0.5
-        self.y = settings.HEIGHT * 0.55
+        self.x, self.y = self.start_position
         self.health = settings.PLAYER_STARTING_HEALTH
         self.invulnerability_timer = 0.0
         self.animation_time = 0.0
         self.facing = 1
         self.boosting = False
+        self.swim_vertical = 0.0
+        self.bubble_timer = 0.0
+        self.bubbles.clear()
 
     @property
     def rect(self) -> pygame.Rect:
@@ -40,6 +62,7 @@ class Player:
             dx /= length
             dy /= length
             self.facing = 1 if dx >= 0 else -1
+        self.swim_vertical += (dy - self.swim_vertical) * min(1.0, dt * 5.0)
 
         self.boosting = bool(keys[pygame.K_SPACE])
         speed = settings.PLAYER_SPEED
@@ -48,10 +71,28 @@ class Player:
 
         self.x += dx * speed * dt
         self.y += dy * speed * dt
-        self.x = max(self.radius + 8, min(settings.WIDTH - self.radius - 8, self.x))
-        self.y = max(settings.HUD_HEIGHT + self.radius, min(settings.HEIGHT - self.radius - 12, self.y))
+        left, top, right, bottom = self.world_bounds
+        self.x = max(left + self.radius + 8, min(right - self.radius - 8, self.x))
+        self.y = max(top + self.radius + 8, min(bottom - self.radius - 12, self.y))
         self.animation_time += dt * (1.8 if length else 0.7)
         self.invulnerability_timer = max(0.0, self.invulnerability_timer - dt)
+
+        interval = 0.12 if self.boosting else 0.28
+        if length:
+            self.bubble_timer += dt
+            while self.bubble_timer >= interval:
+                self.bubble_timer -= interval
+                self.bubbles.append(
+                    [self.x - self.facing * 20, self.y + 4, 0.75, self.animation_time]
+                )
+        else:
+            self.bubble_timer = 0.0
+
+        for bubble in self.bubbles:
+            bubble[1] -= 25 * dt
+            bubble[0] += math.sin(bubble[3] + self.animation_time) * 7 * dt
+            bubble[2] -= dt
+        self.bubbles = [bubble for bubble in self.bubbles if bubble[2] > 0]
 
     def take_damage(self) -> bool:
         """Lose one heart unless the player is still invulnerable."""
@@ -61,27 +102,24 @@ class Player:
         self.invulnerability_timer = settings.PLAYER_INVULNERABILITY_SECONDS
         return True
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface, camera: Camera) -> None:
         # Blink during the short post-hit invulnerability period.
         if self.invulnerability_timer > 0 and int(self.invulnerability_timer * 12) % 2 == 0:
             return
 
         bob = math.sin(self.animation_time * 4) * 2.5
-        x, y = round(self.x), round(self.y + bob)
+        x, y = camera.world_to_screen((self.x, self.y + bob))
+        image = self.sprite_left if self.facing < 0 else self.sprite_right
+        image = rotated_sprite(image, -self.swim_vertical * 7)
+        screen.blit(image, image.get_rect(center=(x, y)))
 
-        # Fins and tank
-        tail_x = x - self.facing * 20
-        pygame.draw.ellipse(screen, (248, 126, 109), (tail_x - 8, y - 5, 17, 11))
-        pygame.draw.rect(screen, (171, 228, 228), (x - 3, y - 15, 10, 30), border_radius=5)
-
-        # Suit, visor, and highlights
-        pygame.draw.ellipse(screen, (255, 174, 100), (x - 17, y - 14, 35, 28))
-        pygame.draw.circle(screen, (37, 81, 112), (x + self.facing * 5, y), 10)
-        pygame.draw.circle(screen, (126, 225, 231), (x + self.facing * 7, y - 2), 7)
-        pygame.draw.circle(screen, settings.WHITE, (x + self.facing * 9, y - 5), 2)
-        pygame.draw.line(screen, (255, 225, 168), (x + self.facing * 15, y + 7), (x + self.facing * 22, y + 11), 3)
+        for bubble_x, bubble_y, life, _phase in self.bubbles:
+            radius = 10 if life > 0.4 else 7
+            bubble = scaled_sprite(self.bubble_sprite, (radius, radius))
+            bubble_position = camera.world_to_screen((bubble_x, bubble_y))
+            screen.blit(bubble, bubble.get_rect(center=bubble_position))
 
         if self.boosting:
-            puff_x = x - self.facing * 27
+            puff_x = x - self.facing * 39
             pygame.draw.circle(screen, (121, 227, 238), (puff_x, y), 5)
             pygame.draw.circle(screen, (186, 246, 244), (puff_x - self.facing * 8, y - 5), 3)
