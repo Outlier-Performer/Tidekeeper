@@ -16,6 +16,8 @@ Open a terminal in the project folder. A virtual environment keeps the game depe
 
 ### macOS
 
+After setting up the dependencies below, you can launch the game by double-clicking `launch_tidekeeper.command` in Finder. If macOS blocks it the first time, right-click the file, choose **Open**, and confirm.
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
