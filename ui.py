@@ -54,8 +54,8 @@ class GameUI:
             self.play_button_rect.center,
             self.play_button_rect.width - 20,
         )
-        self._text(screen, self.small_font, "Click an organism, habitat, or pollutant to learn about it.", settings.WHITE, (settings.WIDTH // 2, 505))
-        self._text(screen, self.small_font, "Swim: WASD / arrows  |  Boost: SPACE or SHIFT  |  P opens cleanup", settings.PALE_AQUA, (settings.WIDTH // 2, 538))
+        self._text(screen, self.small_font, "Swim: WASD / arrows  |  Boost: hold SHIFT  |  Inspect: press F", settings.PALE_AQUA, (settings.WIDTH // 2, 538))
+        self._text(screen, self.small_font, "Click OPEN PLAY WINDOW to start cleanup: collect litter and avoid predators.", settings.WHITE, (settings.WIDTH // 2, 567))
 
     def draw_difficulty_select(
         self,
@@ -129,8 +129,8 @@ class GameUI:
         self._text(screen, self.small_font, f"{habitat}  |  approx. {depth}m game depth", settings.PALE_AQUA, (420, 55))
         self._text(screen, self.small_font, f"FIELD NOTES {discoveries}", settings.WHITE, (834, 55))
         if mode == "explore":
-            self._text(screen, self.small_font, "P  OPEN PLAY WINDOW", settings.PALE_AQUA, (131, 74))
-            self._text(screen, self.small_font, "CLICK TO LEARN  |  F NEARBY", settings.WHITE, (370, 20))
+            self._text(screen, self.small_font, "OPEN PLAY WINDOW", settings.PALE_AQUA, (131, 74))
+            self._text(screen, self.small_font, "CLICK TO LEARN  |  Inspect: press F", settings.WHITE, (370, 20))
             self._draw_boost_bar(screen, boost_energy)
             return
 

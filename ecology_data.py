@@ -222,6 +222,14 @@ WILDLIFE_PROFILES = (
         (570, 2300),
         (2180, 2620),
     )),
+    *(dict(
+        next(profile for profile in WILDLIFE_PROFILES if profile["id"] == "sperm_whale"),
+        position=position,
+    ) for position in (
+        (3240, 2520),
+        (900, 2700),
+        (3650, 2660),
+    )),
     {
         "id": "moon_jellyfish",
         "name": "Moon Jellyfish",

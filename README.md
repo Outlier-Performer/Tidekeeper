@@ -39,10 +39,10 @@ If PowerShell blocks activation, use Command Prompt and run `.venv\Scripts\activ
 ## Controls
 
 - **WASD** or **arrow keys** — swim in four directions
-- **Space** or **Shift** — use the limited speed boost shown in the HUD; release to recharge after a short delay
+- Hold **Shift** — use the limited speed boost shown in the HUD; release to recharge after a short delay
 - **Enter** or **E** — start exploring from the menu
 - **Click Explore World** — open the Gulf exploration world
-- **Click Open Play Window** or press **P** — launch the separate cleanup game window
+- **Click Open Play Window** — launch the separate cleanup game window
 - **Click an organism, habitat, or pollutant** — open its fact and environmental-impact card
 - **F** — when near visible wildlife, fish, litter, coral, or plants, open its information card; close an open card
 - **Click the source link** — open the cited agency or museum reference
@@ -52,11 +52,11 @@ If PowerShell blocks activation, use Command Prompt and run `.venv\Scripts\activ
 
 ### Explore World
 
-The main window is a free-roaming world with no timer, damage, or mission collection. It contains original PNG artwork for Gulf-associated fish, wildlife, reef habitats, and seagrass, alongside a reduced amount of small illustrated plastic litter, cans, oil slicks, and lost fishing gear; the separate oversized bottle marker is removed. Click visible wildlife, fish, coral, reef, plants, or any small litter item to read Gulf of Mexico-specific facts, environmental impacts, and source links. Press **F** near any such object to open its card. Repeated examples of a species share the same information. Eighteen dolphins swim quickly through the world, alongside eleven bull sharks and roaming jellyfish. The HUD shows boost charge, current stylized habitat, and approximate **game depth**.
+The main window is a free-roaming world with no timer, damage, or mission collection. It contains original PNG artwork for Gulf-associated fish, wildlife, reef habitats, and seagrass, alongside a reduced amount of small illustrated plastic litter, cans, oil slicks, and lost fishing gear; the separate oversized bottle marker is removed. Click visible wildlife, fish, coral, reef, plants, or any small litter item to read Gulf of Mexico-specific facts, environmental impacts, and source links. **Inspect: press F** near any such object to open its card. Repeated examples of a species share the same information. Eighteen dolphins swim quickly through the world, alongside eleven bull sharks, four slowly wandering sperm whales, and roaming jellyfish. The HUD shows boost charge, current stylized habitat, and approximate **game depth**.
 
 ### Cleanup game window
 
-The menu's **Open Play Window** button (or **P** while exploring) launches a separate desktop window for the cleanup mission. Choose Easy, Medium, or Hard before starting. The expanded map begins with enough randomly placed pieces of waste to complete the selected objective, with no replacement spawns. Sharks wander when far away and chase nearby divers; slower, roaming jellyfish can also cause damage. Easy has 6 jellyfish and 10 pieces to collect, Medium has 9 and 15, and Hard has 12 and 20. Collect all required pieces before the 120-second timer runs out. The diver has three hearts and a short invulnerability window after taking a hit. **R** or **Enter** restarts after a result; **Escape** closes the game window. The exploration window stays separate.
+The menu's **Open Play Window** button launches a separate desktop window for the cleanup mission. Choose Easy, Medium, or Hard before starting. The expanded map begins with enough randomly placed pieces of waste to complete the selected objective, with no replacement spawns. Sharks wander when far away and chase nearby divers; slower, roaming jellyfish can also cause damage. Easy has 6 jellyfish and 10 pieces to collect, Medium has 9 and 15, and Hard has 12 and 20. Collect all required pieces before the 120-second timer runs out. The diver has three hearts and a short invulnerability window after taking a hit. **R** or **Enter** restarts after a result; **Escape** closes the game window. The exploration window stays separate.
 
 ## World and camera
 

@@ -1,6 +1,7 @@
 """World-placed wildlife observation points and discovery tracking."""
 
 import math
+import random
 
 import pygame
 
@@ -62,10 +63,26 @@ class WildlifeSystem:
                 float(x) + math.sin(self.time * 0.34 + phase) * 145,
                 float(y) + math.sin(self.time * 0.53 + phase) * 34,
             )
+        if profile["id"] == "sperm_whale":
+            segment_duration = 7.0
+            segment = int(self.time // segment_duration)
+            progress = (self.time / segment_duration) - segment
+            start_x, start_y = self._whale_waypoint(index, segment)
+            end_x, end_y = self._whale_waypoint(index, segment + 1)
+            eased_progress = progress * progress * (3 - 2 * progress)
+            return (
+                float(x) + start_x + (end_x - start_x) * eased_progress,
+                float(y) + start_y + (end_y - start_y) * eased_progress,
+            )
         return (
             float(x) + math.sin(self.time * 0.42 + phase) * 46,
             float(y) + math.sin(self.time * 0.68 + phase) * 13,
         )
+
+    @staticmethod
+    def _whale_waypoint(index: int, step: int) -> tuple[float, float]:
+        generator = random.Random(index * 1009 + step)
+        return generator.uniform(-250, 250), generator.uniform(-85, 85)
 
     def profile_for(self, profile_id: str) -> dict[str, object]:
         return next(profile for profile in WILDLIFE_PROFILES if profile["id"] == profile_id)
@@ -93,14 +110,17 @@ class WildlifeSystem:
     ) -> None:
         for index, organism in enumerate(self.organisms):
             world_x, world_y = self.position_of(organism, index)
-            if not camera.sees((world_x, world_y), 70):
+            hit_width, hit_height = self._illustration_hitbox_size(
+                str(organism["illustration"])
+            )
+            if not camera.sees(
+                (world_x, world_y),
+                max(70, hit_width // 2, hit_height // 2),
+            ):
                 continue
             x, y = camera.world_to_screen((world_x, world_y))
             bob = round(math.sin(time * 1.7 + index) * 3) if organism["kind"] != "animal" else 0
             y += bob
-            hit_width, hit_height = self._illustration_hitbox_size(
-                str(organism["illustration"])
-            )
             hitbox = pygame.Rect(
                 x - hit_width // 2,
                 y - hit_height // 2,
@@ -109,19 +129,25 @@ class WildlifeSystem:
             )
             if hitboxes is not None:
                 hitboxes.append((hitbox, organism))
-            dolphin_facing_left = (
-                organism["id"] in ("bottlenose_dolphin", "bull_shark")
-                and math.cos(
-                    self.time * (1.3 if organism["id"] == "bottlenose_dolphin" else 0.34)
-                    + index * 1.7
-                ) < 0
-            )
+            if organism["id"] == "bottlenose_dolphin":
+                facing_left = math.cos(self.time * 1.3 + index * 1.7) < 0
+            elif organism["id"] == "bull_shark":
+                facing_left = math.cos(self.time * 0.34 + index * 1.7) < 0
+            elif organism["id"] == "sperm_whale":
+                segment = int(self.time // 7.0)
+                facing_left = (
+                    self._whale_waypoint(index, segment + 1)[0]
+                    < self._whale_waypoint(index, segment)[0]
+                )
+            else:
+                facing_left = False
             self.draw_card_illustration(
                 screen,
                 organism,
                 (x, y),
                 time,
-                dolphin_facing_left,
+                facing_left,
+                large_world_sprite=True,
             )
 
     @staticmethod
@@ -133,7 +159,7 @@ class WildlifeSystem:
             "queen_angelfish": (88, 62),
             "turtle": (78, 70),
             "snapper": (94, 66),
-            "whale": (114, 70),
+            "whale": (360, 156),
             "shark": (108, 68),
             "coral": (80, 70),
             "reef": (82, 70),
@@ -265,6 +291,7 @@ class WildlifeSystem:
         center: tuple[int, int],
         time: float = 0.0,
         facing_left: bool = False,
+        large_world_sprite: bool = False,
     ) -> None:
         """Draw the same recognizable artwork in the world and its information card."""
         x, y = center
@@ -277,7 +304,11 @@ class WildlifeSystem:
             "sargassum": ("plants", "sargassum", (66, 73)),
             "turtle": ("animals", "green_sea_turtle", (76, 68)),
             "snapper": ("fish", "red_snapper", (92, 64)),
-            "whale": ("animals", "sperm_whale", (112, 66)),
+            "whale": (
+                "animals",
+                "sperm_whale",
+                (340, 136) if large_world_sprite else (126, 50),
+            ),
             "shark": ("animals", "bull_shark", (106, 64)),
             "coral": ("coral", "branching_coral", (78, 66)),
         }

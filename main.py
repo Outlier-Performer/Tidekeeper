@@ -99,8 +99,6 @@ class TidekeeperGame:
                 if self.state == MENU:
                     if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_e):
                         self.start_game()
-                    elif event.key == pygame.K_p:
-                        self._launch_play_window()
                 elif self.state in (VICTORY, GAME_OVER):
                     if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_r):
                         self.start_game()
@@ -109,8 +107,6 @@ class TidekeeperGame:
                 elif self.state == PLAYING:
                     if self.wildlife.open_profile is not None and event.key in (pygame.K_f, pygame.K_ESCAPE):
                         self.wildlife.close_card()
-                    elif event.key == pygame.K_p:
-                        self._launch_play_window()
                     elif event.key == pygame.K_f and self.mode == EXPLORE_MODE:
                         profile = self._nearby_info_profile()
                         if profile is not None:
