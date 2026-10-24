@@ -55,7 +55,7 @@ class GameUI:
             self.play_button_rect.width - 20,
         )
         self._text(screen, self.small_font, "Click an organism, habitat, or pollutant to learn about it.", settings.WHITE, (settings.WIDTH // 2, 505))
-        self._text(screen, self.small_font, "Swim: WASD / arrows  |  Boost: SPACE  |  P opens the cleanup game", settings.PALE_AQUA, (settings.WIDTH // 2, 538))
+        self._text(screen, self.small_font, "Swim: WASD / arrows  |  Boost: SPACE or SHIFT  |  P opens cleanup", settings.PALE_AQUA, (settings.WIDTH // 2, 538))
 
     def draw_difficulty_select(
         self,

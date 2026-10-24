@@ -37,7 +37,7 @@ If PowerShell blocks activation, use Command Prompt and run `.venv\Scripts\activ
 ## Controls
 
 - **WASD** or **arrow keys** — swim in four directions
-- **Space** — use the limited speed boost shown in the HUD; release to recharge after a short delay
+- **Space** or **Shift** — use the limited speed boost shown in the HUD; release to recharge after a short delay
 - **Enter** or **E** — start exploring from the menu
 - **Click Explore World** — open the Gulf exploration world
 - **Click Open Play Window** or press **P** — launch the separate cleanup game window
@@ -50,7 +50,7 @@ If PowerShell blocks activation, use Command Prompt and run `.venv\Scripts\activ
 
 ### Explore World
 
-The main window is a free-roaming world with no timer, damage, or mission collection. It contains original PNG artwork for Gulf-associated fish, wildlife, reef habitats, and seagrass, alongside a reduced amount of small illustrated plastic litter, cans, oil slicks, and lost fishing gear; the separate oversized bottle marker is removed. Click visible wildlife, fish, coral, reef, plants, or any small litter item to read Gulf of Mexico-specific facts, environmental impacts, and source links. Press **F** near any such object to open its card. Repeated examples of a species share the same information. Twelve dolphins swim quickly through the world, alongside seven bull sharks and roaming jellyfish. The HUD shows boost charge, current stylized habitat, and approximate **game depth**.
+The main window is a free-roaming world with no timer, damage, or mission collection. It contains original PNG artwork for Gulf-associated fish, wildlife, reef habitats, and seagrass, alongside a reduced amount of small illustrated plastic litter, cans, oil slicks, and lost fishing gear; the separate oversized bottle marker is removed. Click visible wildlife, fish, coral, reef, plants, or any small litter item to read Gulf of Mexico-specific facts, environmental impacts, and source links. Press **F** near any such object to open its card. Repeated examples of a species share the same information. Eighteen dolphins swim quickly through the world, alongside eleven bull sharks and roaming jellyfish. The HUD shows boost charge, current stylized habitat, and approximate **game depth**.
 
 ### Cleanup game window
 

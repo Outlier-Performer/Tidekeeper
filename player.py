@@ -73,7 +73,11 @@ class Player:
             self.move_dy = 0.0
         self.swim_vertical += (self.move_dy - self.swim_vertical) * min(1.0, dt * 5.0)
 
-        boost_requested = bool(keys[pygame.K_SPACE])
+        boost_requested = bool(
+            keys[pygame.K_SPACE]
+            or keys[pygame.K_LSHIFT]
+            or keys[pygame.K_RSHIFT]
+        )
         self.boosting = boost_requested and self.boost_energy > 0 and self.swimming
         if self.boosting:
             self.boost_energy = max(
