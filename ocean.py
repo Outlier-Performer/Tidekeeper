@@ -99,29 +99,28 @@ class Ocean:
     def _make_coral(self) -> list[tuple[float, float, str, int, int, float]]:
         placements = []
         reef_groups = (
-            (820, 1690, 6),
-            (1320, 1910, 7),
-            (1880, 2020, 9),
-            (2480, 2020, 9),
-            (3260, 1910, 7),
-            (3680, 2010, 6),
+            (820, 1690, 4),
+            (1450, 1910, 4),
+            (2150, 2020, 5),
+            (2900, 2020, 5),
+            (3550, 1910, 4),
         )
         kinds = ("branch", "brain", "fan")
         for center_x, base_y, count in reef_groups:
+            spacing = 120
+            start_x = center_x - (count - 1) * spacing / 2
             for index in range(count):
-                kind = kinds[index % len(kinds)]
-                scale = self.random.uniform(0.50, 0.87)
-                if 1600 <= center_x <= 2800:
-                    scale *= 1.08
+                kind = kinds[(index + self.random.randrange(len(kinds))) % len(kinds)]
+                scale = self.random.uniform(0.42, 0.58)
                 source = self.coral_sprites[kind]
                 placements.append(
                     (
-                        center_x + self.random.randint(-125, 125),
-                        base_y + self.random.randint(-32, 20),
+                        start_x + index * spacing + self.random.randint(-9, 9),
+                        base_y + self.random.randint(-8, 8),
                         kind,
                         round(source.get_width() * scale),
                         round(source.get_height() * scale),
-                        self.random.random() * math.tau,
+                        self.random.uniform(-0.08, 0.08),
                     )
                 )
         return placements

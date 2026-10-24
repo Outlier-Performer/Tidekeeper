@@ -15,6 +15,11 @@ class GameUI:
         self.explore_button_rect = pygame.Rect(settings.WIDTH // 2 - 235, 423, 220, 60)
         self.play_button_rect = pygame.Rect(settings.WIDTH // 2 + 15, 423, 220, 60)
         self.start_button_rect = self.explore_button_rect
+        self.difficulty_button_rects = {
+            "easy": pygame.Rect(145, 350, 220, 88),
+            "medium": pygame.Rect(390, 350, 220, 88),
+            "hard": pygame.Rect(635, 350, 220, 88),
+        }
         self.source_link_rect: pygame.Rect | None = None
 
     @staticmethod
@@ -52,6 +57,55 @@ class GameUI:
         self._text(screen, self.small_font, "Click an organism, habitat, or pollutant to learn about it.", settings.WHITE, (settings.WIDTH // 2, 505))
         self._text(screen, self.small_font, "Swim: WASD / arrows  |  Boost: SPACE  |  P opens the cleanup game", settings.PALE_AQUA, (settings.WIDTH // 2, 538))
 
+    def draw_difficulty_select(
+        self,
+        screen: pygame.Surface,
+        mouse_position: tuple[int, int],
+    ) -> None:
+        panel = pygame.Surface((860, 360), pygame.SRCALPHA)
+        pygame.draw.rect(panel, (3, 29, 50, 218), panel.get_rect(), border_radius=26)
+        pygame.draw.rect(panel, (103, 211, 204, 100), panel.get_rect(), 1, border_radius=26)
+        screen.blit(panel, (70, 170))
+        self._text(
+            screen,
+            self.heading_font,
+            "CHOOSE YOUR DIFFICULTY",
+            settings.WHITE,
+            (settings.WIDTH // 2, 238),
+        )
+        descriptions = {
+            "easy": ("EASY", "10 pieces  |  4 jellyfish"),
+            "medium": ("MEDIUM", "15 pieces  |  7 jellyfish"),
+            "hard": ("HARD", "20 pieces  |  10 jellyfish"),
+        }
+        colors = {
+            "easy": (94, 194, 158),
+            "medium": (235, 173, 91),
+            "hard": (211, 105, 104),
+        }
+        for difficulty, rect in self.difficulty_button_rects.items():
+            color = colors[difficulty]
+            if rect.collidepoint(mouse_position):
+                color = tuple(min(255, channel + 24) for channel in color)
+            pygame.draw.rect(screen, color, rect, border_radius=16)
+            title, description = descriptions[difficulty]
+            self._text(screen, self.body_font, title, settings.INK, (rect.centerx, rect.y + 30))
+            self._text(screen, self.small_font, description, settings.INK, (rect.centerx, rect.y + 62))
+        self._text(
+            screen,
+            self.small_font,
+            "Sharks get faster and notice you from farther away on harder settings.",
+            settings.PALE_AQUA,
+            (settings.WIDTH // 2, 477),
+        )
+        self._text(
+            screen,
+            self.small_font,
+            "Click a setting or press 1, 2, or 3  |  ESC to close",
+            settings.WHITE,
+            (settings.WIDTH // 2, 514),
+        )
+
     def draw_hud(
         self,
         screen: pygame.Surface,
@@ -63,6 +117,7 @@ class GameUI:
         habitat: str,
         depth: int,
         discoveries: int,
+        target_score: int | None = None,
     ) -> None:
         pygame.draw.rect(screen, (4, 38, 65), (0, 0, settings.WIDTH, settings.HUD_HEIGHT))
         pygame.draw.line(screen, (84, 198, 193), (0, settings.HUD_HEIGHT - 2), (settings.WIDTH, settings.HUD_HEIGHT - 2), 2)
@@ -81,7 +136,8 @@ class GameUI:
         for index in range(settings.PLAYER_STARTING_HEALTH):
             color = settings.HEART_RED if index < health else (88, 111, 122)
             self._draw_heart(screen, 114 + index * 27, 72, color)
-        self._text(screen, self.small_font, f"CLEANED {score}/{settings.TARGET_SCORE}", settings.WHITE, (260, 74))
+        target = settings.TARGET_SCORE if target_score is None else target_score
+        self._text(screen, self.small_font, f"CLEANED {score}/{target}", settings.WHITE, (260, 74))
         self._text(screen, self.small_font, "REEF", settings.PALE_AQUA, (394, 74))
         bar = pygame.Rect(424, 66, 125, 16)
         pygame.draw.rect(screen, (24, 74, 89), bar, border_radius=8)

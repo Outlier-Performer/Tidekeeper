@@ -54,7 +54,7 @@ The main window is a free-roaming world with no timer, damage, or mission collec
 
 ### Cleanup game window
 
-The menu's **Open Play Window** button (or **P** while exploring) launches a separate desktop window for the compact cleanup mission. It has its own diver, timer, health, pollution, and chasing Gulf-shark illustrations. Collect 10 pieces of waste before the 120-second timer runs out. The diver has three hearts and a short invulnerability window after taking a hit. **R** or **Enter** restarts after a result; **Escape** closes that game window. The exploration window stays separate.
+The menu's **Open Play Window** button (or **P** while exploring) launches a separate desktop window for the cleanup mission. Choose Easy, Medium, or Hard before starting. The expanded map begins with enough randomly placed pieces of waste to complete the selected objective, with no replacement spawns. Sharks wander when far away and chase nearby divers; roaming jellyfish can also cause damage. Collect all required pieces before the 120-second timer runs out. The diver has three hearts and a short invulnerability window after taking a hit. **R** or **Enter** restarts after a result; **Escape** closes the game window. The exploration window stays separate.
 
 ## World and camera
 

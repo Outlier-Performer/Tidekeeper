@@ -74,11 +74,15 @@ class PollutionField:
     def __init__(
         self,
         world_bounds: tuple[int, int, int, int] | None = None,
+        spawn_new_items: bool = True,
+        initial_item_count: int = 7,
     ) -> None:
         self.random = random.Random()
         self.items: list[PollutionItem] = []
         self.effects: list[PickupEffect] = []
         self.spawn_timer = 0.0
+        self.spawn_new_items = spawn_new_items
+        self.initial_item_count = initial_item_count
         self.world_bounds = world_bounds or (
             0,
             settings.HUD_HEIGHT,
@@ -87,27 +91,36 @@ class PollutionField:
         )
         self.reset()
 
-    def reset(self, player_position: tuple[float, float] = (500.0, 480.0)) -> None:
+    def reset(
+        self,
+        player_position: tuple[float, float] | None = (500.0, 480.0),
+        item_count: int | None = None,
+    ) -> None:
         self.items.clear()
         self.effects.clear()
         self.spawn_timer = 0.0
-        for _ in range(7):
+        for _ in range(self.initial_item_count if item_count is None else item_count):
             self._spawn_item(player_position)
 
-    def _spawn_item(self, player_position: tuple[float, float]) -> None:
-        x = round(player_position[0] + self.random.randint(-settings.ITEM_SPAWN_RADIUS_X, settings.ITEM_SPAWN_RADIUS_X))
-        y = round(player_position[1] + self.random.randint(-settings.ITEM_SPAWN_RADIUS_Y, settings.ITEM_SPAWN_RADIUS_Y))
+    def _spawn_item(self, player_position: tuple[float, float] | None) -> None:
         left, top, right, bottom = self.world_bounds
-        x = max(left + 42, min(right - 42, x))
-        y = max(top + 45, min(bottom - 55, y))
+        if player_position is None:
+            x = self.random.randint(left + 42, right - 42)
+            y = self.random.randint(top + 45, bottom - 55)
+        else:
+            x = round(player_position[0] + self.random.randint(-settings.ITEM_SPAWN_RADIUS_X, settings.ITEM_SPAWN_RADIUS_X))
+            y = round(player_position[1] + self.random.randint(-settings.ITEM_SPAWN_RADIUS_Y, settings.ITEM_SPAWN_RADIUS_Y))
+            x = max(left + 42, min(right - 42, x))
+            y = max(top + 45, min(bottom - 55, y))
         kind = self.random.choices(("bottle", "can", "net"), weights=(5, 4, 1), k=1)[0]
         self.items.append(PollutionItem(x, y, kind))
 
     def update(self, dt: float, player_position: tuple[float, float]) -> None:
-        self.spawn_timer += dt
-        while self.spawn_timer >= settings.ITEM_SPAWN_INTERVAL and len(self.items) < settings.MAX_POLLUTION_ITEMS:
-            self.spawn_timer -= settings.ITEM_SPAWN_INTERVAL
-            self._spawn_item(player_position)
+        if self.spawn_new_items:
+            self.spawn_timer += dt
+            while self.spawn_timer >= settings.ITEM_SPAWN_INTERVAL and len(self.items) < settings.MAX_POLLUTION_ITEMS:
+                self.spawn_timer -= settings.ITEM_SPAWN_INTERVAL
+                self._spawn_item(player_position)
 
         for item in self.items:
             item.update(dt)
