@@ -2,7 +2,8 @@
 
 import pygame
 
-from art import load_sprite, scaled_sprite
+from art import cropped_photo, load_sprite, scaled_sprite
+from photo_data import WILDLIFE_PHOTOS
 import settings
 from region_data import (
     REGION_HAZARD_NAMES,
@@ -46,6 +47,8 @@ class GameUI:
             "hard": pygame.Rect(635, 350, 220, 88),
         }
         self.source_link_rect: pygame.Rect | None = None
+        self.photo_link_rect: pygame.Rect | None = None
+        self.photo_link_url: str | None = None
 
     @staticmethod
     def _text(screen, font, text, color, center) -> None:
@@ -285,11 +288,61 @@ class GameUI:
         overlay = pygame.Surface((settings.WIDTH, settings.HEIGHT), pygame.SRCALPHA)
         overlay.fill((4, 25, 49, 176))
         screen.blit(overlay, (0, 0))
-        panel = pygame.Rect(settings.WIDTH // 2 - 350, settings.HEIGHT // 2 - 240, 700, 480)
+        panel = pygame.Rect(settings.WIDTH // 2 - 405, settings.HEIGHT // 2 - 270, 810, 540)
         pygame.draw.rect(screen, (8, 62, 86), panel, border_radius=18)
         pygame.draw.rect(screen, (115, 229, 205), panel, 2, border_radius=18)
+        self.photo_link_rect = None
+        self.photo_link_url = None
+        photo_content_top = panel.y + 220
+        photo = (
+            WILDLIFE_PHOTOS.get(str(profile.get("illustration", "")))
+            if profile.get("kind") == "animal"
+            else None
+        )
         is_pollutant = profile.get("kind") == "pollutant"
-        if is_pollutant:
+        if photo is not None:
+            photo_frame = pygame.Rect(panel.x + 28, panel.y + 24, 230, 150)
+            pygame.draw.rect(screen, (4, 34, 53), photo_frame, border_radius=10)
+            image = cropped_photo(
+                str(photo["file"]),
+                (photo_frame.width - 8, photo_frame.height - 8),
+            )
+            screen.blit(image, image.get_rect(center=photo_frame.center))
+            pygame.draw.rect(
+                screen,
+                (142, 222, 212),
+                photo_frame,
+                2,
+                border_radius=10,
+            )
+            credit = f'Photo: {photo["artist"]} · {photo["license"]}'
+            credit_font = pygame.font.SysFont("Avenir Next", 12)
+            credit_lines: list[str] = []
+            line = ""
+            for word in credit.split():
+                candidate = f"{line} {word}".strip()
+                if credit_font.size(candidate)[0] > photo_frame.width and line:
+                    credit_lines.append(line)
+                    line = word
+                else:
+                    line = candidate
+            if line:
+                credit_lines.append(line)
+            credit_top = photo_frame.bottom + 5
+            for index, credit_line in enumerate(credit_lines):
+                image = credit_font.render(credit_line, True, settings.PALE_AQUA)
+                rect = image.get_rect(
+                    midtop=(photo_frame.centerx, credit_top + index * credit_font.get_linesize())
+                )
+                screen.blit(image, rect)
+                if self.photo_link_rect is None:
+                    self.photo_link_rect = rect.copy()
+                else:
+                    self.photo_link_rect.union_ip(rect)
+            if self.photo_link_rect is not None:
+                photo_content_top = self.photo_link_rect.bottom + 12
+            self.photo_link_url = str(photo["source"])
+        elif is_pollutant:
             illustration = str(profile.get("illustration", ""))
             if illustration.startswith("mediterranean_"):
                 asset_name = illustration.removeprefix("mediterranean_")
@@ -334,25 +387,38 @@ class GameUI:
                 (panel.x + 59, panel.y + 56),
             )
 
+        photo_layout = photo is not None
+        title_center = (
+            (panel.x + 535, panel.y + 42)
+            if photo_layout
+            else (settings.WIDTH // 2 + 35, panel.y + 38)
+        )
+        title_max_width = panel.width - 300 if photo_layout else panel.width - 112
         title_rect = self._fit_text(
             screen,
             self.heading_font,
             str(profile["name"]),
             settings.WHITE,
-            (settings.WIDTH // 2 + 35, panel.y + 38),
-            panel.width - 112,
+            title_center,
+            title_max_width,
         )
         subtitle_image = self._fit_surface(
             self.small_font,
             f'{str(profile["kind"]).upper()}  |  {profile["habitat"]}',
             settings.PALE_AQUA,
-            panel.width - 60,
+            title_max_width,
         )
         subtitle_rect = subtitle_image.get_rect(
-            midtop=(settings.WIDTH // 2, title_rect.bottom + 8)
+            midtop=(
+                title_center[0] if photo_layout else settings.WIDTH // 2,
+                title_rect.bottom + 8,
+            )
         )
         screen.blit(subtitle_image, subtitle_rect)
-        content_top = max(panel.y + 116, subtitle_rect.bottom + 12)
+        content_top = max(
+            photo_content_top if photo_layout else panel.y + 116,
+            subtitle_rect.bottom + 12,
+        )
         about_bottom = self._draw_wrapped_section(
             screen,
             "ABOUT",
@@ -371,7 +437,7 @@ class GameUI:
             panel.width - 68,
             (210, 241, 229),
         )
-        source_y = panel.y + 394
+        source_y = panel.y + 474
         source_image = self._fit_surface(
             self.small_font,
             f'Source: {profile["source_label"]}  [open]',
@@ -380,12 +446,17 @@ class GameUI:
         )
         self.source_link_rect = source_image.get_rect(center=(settings.WIDTH // 2, source_y))
         screen.blit(source_image, self.source_link_rect)
+        close_hint = (
+            "Click photo credit or source  |  Press F or ESC to close"
+            if photo_layout
+            else "Click source  |  Press F or ESC to close"
+        )
         self._text(
             screen,
             self.small_font,
-            "Click the source to open it  |  Press F or ESC to close",
+            close_hint,
             settings.WHITE,
-            (settings.WIDTH // 2, panel.y + 449),
+            (settings.WIDTH // 2, panel.y + 518),
         )
         return self.source_link_rect
 

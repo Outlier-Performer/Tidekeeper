@@ -1,5 +1,6 @@
 """Main entry point and game-state loop for Tidekeeper."""
 
+import math
 import random
 import subprocess
 import sys
@@ -171,6 +172,12 @@ class TidekeeperGame:
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == PLAYING:
                 if self.wildlife.open_profile is not None:
                     if (
+                        self.ui.photo_link_rect is not None
+                        and self.ui.photo_link_rect.collidepoint(event.pos)
+                        and self.ui.photo_link_url is not None
+                    ):
+                        webbrowser.open(self.ui.photo_link_url)
+                    elif (
                         self.ui.source_link_rect is not None
                         and self.ui.source_link_rect.collidepoint(event.pos)
                     ):
@@ -297,18 +304,30 @@ class TidekeeperGame:
     def _nearby_info_profile(self) -> dict[str, object] | None:
         """Find the nearest visible information target within interaction range."""
         player_rect = self._player_screen_rect()
-        if any(hitbox.colliderect(player_rect) for hitbox, _ in self.poi_hitboxes):
-            return None
         player_screen = player_rect.center
         nearest_profile = None
-        nearest_distance = settings.WILDLIFE_OBSERVE_RADIUS
-        for hitbox, profile in self.poi_hitboxes:
-            closest_x = max(hitbox.left, min(player_screen[0], hitbox.right))
-            closest_y = max(hitbox.top, min(player_screen[1], hitbox.bottom))
-            distance = ((player_screen[0] - closest_x) ** 2 + (player_screen[1] - closest_y) ** 2) ** 0.5
-            if distance <= nearest_distance:
+        nearest_key: tuple[int, float] | None = None
+        for hitbox, profile in reversed(self.poi_hitboxes):
+            if hitbox.colliderect(player_rect):
+                distance = math.hypot(
+                    player_screen[0] - hitbox.centerx,
+                    player_screen[1] - hitbox.centery,
+                )
+                selection_key = (0, distance)
+            else:
+                closest_x = max(hitbox.left, min(player_screen[0], hitbox.right))
+                closest_y = max(hitbox.top, min(player_screen[1], hitbox.bottom))
+                distance = math.hypot(
+                    player_screen[0] - closest_x,
+                    player_screen[1] - closest_y,
+                )
+                if distance > settings.WILDLIFE_OBSERVE_RADIUS:
+                    continue
+                selection_key = (1, distance)
+
+            if nearest_key is None or selection_key < nearest_key:
                 nearest_profile = profile
-                nearest_distance = distance
+                nearest_key = selection_key
         return nearest_profile
 
     def run(self) -> None:
