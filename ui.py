@@ -2,7 +2,14 @@
 
 import pygame
 
+from art import load_sprite, scaled_sprite
 import settings
+from region_data import (
+    REGION_HAZARD_NAMES,
+    REGION_IDS,
+    REGION_LABELS,
+    normalize_region_id,
+)
 from wildlife import WildlifeSystem
 
 
@@ -12,8 +19,26 @@ class GameUI:
         self.heading_font = pygame.font.SysFont("Avenir Next", 37, bold=True)
         self.body_font = pygame.font.SysFont("Avenir Next", 22)
         self.small_font = pygame.font.SysFont("Avenir Next", 18)
-        self.explore_button_rect = pygame.Rect(settings.WIDTH // 2 - 235, 423, 220, 60)
-        self.play_button_rect = pygame.Rect(settings.WIDTH // 2 + 15, 423, 220, 60)
+        self.menu_font = pygame.font.SysFont("Avenir Next", 29, bold=True)
+        button_width = 380
+        button_height = 66
+        left_x = settings.WIDTH // 2 - 400
+        right_x = settings.WIDTH // 2 + 20
+        row_y = (292, 376, 460)
+        positions = {
+            "gulf": (left_x, row_y[0]),
+            "mediterranean": (right_x, row_y[0]),
+            "arctic": (left_x, row_y[1]),
+            "great_lakes": (right_x, row_y[1]),
+            "amazon": (settings.WIDTH // 2 - button_width // 2, row_y[2]),
+        }
+        self.region_button_rects = {
+            region_id: pygame.Rect(*positions[region_id], button_width, button_height)
+            for region_id in REGION_IDS
+        }
+        self.explore_button_rect = pygame.Rect(settings.WIDTH // 2 - 215, 300, 430, 76)
+        self.play_button_rect = pygame.Rect(settings.WIDTH // 2 - 215, 396, 430, 76)
+        self.back_button_rect = pygame.Rect(settings.WIDTH // 2 - 110, 506, 220, 54)
         self.start_button_rect = self.explore_button_rect
         self.difficulty_button_rects = {
             "easy": pygame.Rect(145, 350, 220, 88),
@@ -27,40 +52,103 @@ class GameUI:
         image = font.render(text, True, color)
         screen.blit(image, image.get_rect(center=center))
 
-    def draw_menu(self, screen: pygame.Surface, mouse_position: tuple[int, int]) -> None:
-        panel = pygame.Surface((860, 430), pygame.SRCALPHA)
-        pygame.draw.rect(panel, (3, 29, 50, 200), panel.get_rect(), border_radius=26)
-        pygame.draw.rect(panel, (103, 211, 204, 90), panel.get_rect(), 1, border_radius=26)
-        screen.blit(panel, (70, 155))
-        self._text(screen, self.title_font, "TIDEKEEPER", settings.WHITE, (settings.WIDTH // 2, 225))
-        self._text(screen, self.body_font, "Explore a stylized Gulf of Mexico underwater world.", settings.PALE_AQUA, (settings.WIDTH // 2, 295))
-        explore_color = (255, 185, 117) if self.explore_button_rect.collidepoint(mouse_position) else (255, 158, 104)
-        play_color = (132, 222, 204) if self.play_button_rect.collidepoint(mouse_position) else (96, 193, 183)
-        pygame.draw.rect(screen, explore_color, self.explore_button_rect, border_radius=17)
-        pygame.draw.rect(screen, play_color, self.play_button_rect, border_radius=17)
-        self._fit_text(
+    def _draw_menu_panel(self, screen: pygame.Surface) -> pygame.Rect:
+        panel = pygame.Rect(70, 115, 860, 470)
+        pygame.draw.rect(screen, (3, 29, 50, 218), panel, border_radius=26)
+        pygame.draw.rect(screen, (153, 194, 198, 130), panel, 1, border_radius=26)
+        return panel
+
+    def _draw_menu_button(
+        self,
+        screen: pygame.Surface,
+        rect: pygame.Rect,
+        label: str,
+        selected: bool = False,
+        hovered: bool = False,
+        region_id: str = "gulf",
+    ) -> None:
+        palette = {
+            "gulf": ((202, 145, 98), (107, 133, 124), (255, 229, 188)),
+            "mediterranean": ((174, 103, 111), (119, 75, 88), (255, 218, 214)),
+            "arctic": ((173, 211, 229), (96, 132, 151), (232, 248, 255)),
+            "great_lakes": ((98, 194, 176), (63, 128, 129), (213, 248, 234)),
+            "amazon": ((231, 155, 141), (148, 91, 91), (255, 224, 207)),
+        }
+        selected_color, color, outline = palette.get(region_id, palette["gulf"])
+        if selected:
+            color = selected_color
+        if hovered:
+            color = tuple(min(255, channel + 18) for channel in color)
+        pygame.draw.rect(screen, color, rect, border_radius=15)
+        if selected:
+            pygame.draw.rect(screen, outline, rect, 2, border_radius=15)
+        label_image = self.menu_font.render(label, True, settings.WHITE)
+        screen.blit(label_image, label_image.get_rect(center=rect.center))
+
+    def draw_region_select(
+        self,
+        screen: pygame.Surface,
+        mouse_position: tuple[int, int],
+    ) -> None:
+        self._draw_menu_panel(screen)
+        self._text(
             screen,
-            self.body_font,
-            "EXPLORE WORLD",
-            settings.INK,
-            self.explore_button_rect.center,
-            self.explore_button_rect.width - 20,
+            self.title_font,
+            "TIDEKEEPER",
+            settings.WHITE,
+            (settings.WIDTH // 2, 225),
         )
-        self._fit_text(
+        for region_id, rect in self.region_button_rects.items():
+            self._draw_menu_button(
+                screen,
+                rect,
+                REGION_LABELS[region_id],
+                hovered=rect.collidepoint(mouse_position),
+                region_id=region_id,
+            )
+
+    def draw_activity_select(
+        self,
+        screen: pygame.Surface,
+        mouse_position: tuple[int, int],
+        region_id: str,
+    ) -> None:
+        region_id = normalize_region_id(region_id)
+        self._draw_menu_panel(screen)
+        title = REGION_LABELS[region_id]
+        self._text(
             screen,
-            self.body_font,
-            "OPEN PLAY WINDOW",
-            settings.INK,
-            self.play_button_rect.center,
-            self.play_button_rect.width - 20,
+            self.heading_font,
+            title,
+            settings.WHITE,
+            (settings.WIDTH // 2, 226),
         )
-        self._text(screen, self.small_font, "Swim: WASD / arrows  |  Boost: hold SHIFT  |  Inspect: press F", settings.PALE_AQUA, (settings.WIDTH // 2, 538))
-        self._text(screen, self.small_font, "Click OPEN PLAY WINDOW to start cleanup: collect litter and avoid predators.", settings.WHITE, (settings.WIDTH // 2, 567))
+        for rect, label in (
+            (self.explore_button_rect, "EXPLORE"),
+            (self.play_button_rect, "PLAY"),
+            (self.back_button_rect, "BACK"),
+        ):
+            self._draw_menu_button(
+                screen,
+                rect,
+                label,
+                hovered=rect.collidepoint(mouse_position),
+                region_id=region_id,
+            )
+
+    def draw_menu(
+        self,
+        screen: pygame.Surface,
+        mouse_position: tuple[int, int],
+        current_region: str = "gulf",
+    ) -> None:
+        self.draw_region_select(screen, mouse_position)
 
     def draw_difficulty_select(
         self,
         screen: pygame.Surface,
         mouse_position: tuple[int, int],
+        region_id: str = "gulf",
     ) -> None:
         panel = pygame.Surface((860, 360), pygame.SRCALPHA)
         pygame.draw.rect(panel, (3, 29, 50, 218), panel.get_rect(), border_radius=26)
@@ -73,10 +161,11 @@ class GameUI:
             settings.WHITE,
             (settings.WIDTH // 2, 238),
         )
+        hazard_name = REGION_HAZARD_NAMES[normalize_region_id(region_id)]
         descriptions = {
-            "easy": ("EASY", "10 pieces  |  6 jellyfish"),
-            "medium": ("MEDIUM", "15 pieces  |  9 jellyfish"),
-            "hard": ("HARD", "20 pieces  |  12 jellyfish"),
+            "easy": ("EASY", f"12 pieces  |  7 {hazard_name}"),
+            "medium": ("MEDIUM", f"18 pieces  |  10 {hazard_name}"),
+            "hard": ("HARD", f"24 pieces  |  14 {hazard_name}"),
         }
         colors = {
             "easy": (94, 194, 158),
@@ -94,7 +183,7 @@ class GameUI:
         self._text(
             screen,
             self.small_font,
-            "Sharks get faster and notice you from farther away on harder settings.",
+            "Predators move faster and pursue you from farther away on harder settings.",
             settings.PALE_AQUA,
             (settings.WIDTH // 2, 477),
         )
@@ -119,40 +208,60 @@ class GameUI:
         discoveries: int,
         target_score: int | None = None,
         boost_energy: float = 1.0,
+        region_title: str = "GULF REEF",
     ) -> None:
         pygame.draw.rect(screen, (4, 38, 65), (0, 0, settings.WIDTH, settings.HUD_HEIGHT))
         pygame.draw.line(screen, (84, 198, 193), (0, settings.HUD_HEIGHT - 2), (settings.WIDTH, settings.HUD_HEIGHT - 2), 2)
-        mode_label = "EXPLORE WORLD" if mode == "explore" else "CLEANUP MISSION"
-        self._text(screen, self.small_font, mode_label, settings.WHITE, (109, 20))
+        self._text(screen, self.small_font, region_title, settings.WHITE, (132, 18))
         timer_label = f"TIME {max(0, int(time_left + 0.999)):03d}s" if mode == "play" else "TIME PAUSED"
-        self._text(screen, self.small_font, timer_label, settings.WHITE, (902, 20))
-        self._text(screen, self.small_font, f"{habitat}  |  approx. {depth}m game depth", settings.PALE_AQUA, (420, 55))
-        self._text(screen, self.small_font, f"FIELD NOTES {discoveries}", settings.WHITE, (834, 55))
+        self._text(screen, self.small_font, timer_label, settings.WHITE, (900, 18))
         if mode == "explore":
-            self._text(screen, self.small_font, "OPEN PLAY WINDOW", settings.PALE_AQUA, (131, 74))
-            self._text(screen, self.small_font, "CLICK TO LEARN  |  Inspect: press F", settings.WHITE, (370, 20))
-            self._draw_boost_bar(screen, boost_energy)
+            self._text(screen, self.small_font, "CLICK TO LEARN  |  Inspect: press F", settings.WHITE, (474, 18))
+            self._text(screen, self.small_font, "ESC: MENU", settings.PALE_AQUA, (84, 58))
+            self._text(
+                screen,
+                self.small_font,
+                f"{habitat}  |  game ~{depth}m",
+                settings.PALE_AQUA,
+                (370, 58),
+            )
+            self._text(
+                screen,
+                self.small_font,
+                f"NOTES {discoveries}",
+                settings.WHITE,
+                (600, 58),
+            )
+            self._draw_boost_bar(screen, boost_energy, label_x=705, bar_x=746, y=51)
             return
 
-        self._text(screen, self.small_font, "HEALTH", settings.PALE_AQUA, (66, 74))
+        self._text(screen, self.small_font, "HEALTH", settings.PALE_AQUA, (42, 58))
         for index in range(settings.PLAYER_STARTING_HEALTH):
             color = settings.HEART_RED if index < health else (88, 111, 122)
-            self._draw_heart(screen, 114 + index * 27, 72, color)
+            self._draw_heart(screen, 96 + index * 26, 57, color)
         target = settings.TARGET_SCORE if target_score is None else target_score
-        self._text(screen, self.small_font, f"CLEANED {score}/{target}", settings.WHITE, (260, 74))
-        self._text(screen, self.small_font, "REEF", settings.PALE_AQUA, (394, 74))
-        bar = pygame.Rect(424, 66, 125, 16)
+        self._text(screen, self.small_font, f"CLEANED {score}/{target}", settings.WHITE, (253, 58))
+        habitat_label = "MEADOW" if region_title == "MEDITERRANEAN SEA" else "REEF"
+        self._text(screen, self.small_font, habitat_label, settings.PALE_AQUA, (375, 58))
+        bar = pygame.Rect(430, 51, 110, 14)
         pygame.draw.rect(screen, (24, 74, 89), bar, border_radius=8)
         fill = bar.copy()
         fill.width = round(bar.width * max(0.0, min(1.0, reef_health)))
         if fill.width:
             pygame.draw.rect(screen, (86, 222, 177), fill, border_radius=8)
         pygame.draw.rect(screen, (118, 211, 202), bar, 2, border_radius=8)
-        self._draw_boost_bar(screen, boost_energy)
+        self._draw_boost_bar(screen, boost_energy, label_x=604, bar_x=644, y=51)
 
-    def _draw_boost_bar(self, screen: pygame.Surface, energy: float) -> None:
-        self._text(screen, self.small_font, "BOOST", settings.PALE_AQUA, (604, 74))
-        bar = pygame.Rect(645, 66, 122, 16)
+    def _draw_boost_bar(
+        self,
+        screen: pygame.Surface,
+        energy: float,
+        label_x: int = 604,
+        bar_x: int = 645,
+        y: int = 51,
+    ) -> None:
+        self._text(screen, self.small_font, "BOOST", settings.PALE_AQUA, (label_x, y + 7))
+        bar = pygame.Rect(bar_x, y, 122, 14)
         pygame.draw.rect(screen, (24, 74, 89), bar, border_radius=8)
         fill = bar.copy()
         fill.width = round(bar.width * max(0.0, min(1.0, energy)))
@@ -181,43 +290,78 @@ class GameUI:
         pygame.draw.rect(screen, (115, 229, 205), panel, 2, border_radius=18)
         is_pollutant = profile.get("kind") == "pollutant"
         if is_pollutant:
-            self._draw_pollutant_art(screen, str(profile.get("illustration", "")), (panel.centerx, panel.y + 132))
-            content_top = panel.y + 176
+            illustration = str(profile.get("illustration", ""))
+            if illustration.startswith("mediterranean_"):
+                asset_name = illustration.removeprefix("mediterranean_")
+                sprite = scaled_sprite(
+                    load_sprite("pollution", f"mediterranean_{asset_name}"),
+                    (90, 90),
+                )
+                screen.blit(sprite, sprite.get_rect(center=(panel.x + 59, panel.y + 56)))
+            elif illustration.startswith(("arctic_", "great_lakes_", "amazon_")):
+                region = next(
+                    region
+                    for region in ("great_lakes", "arctic", "amazon")
+                    if illustration.startswith(f"{region}_")
+                )
+                asset_name = illustration.removeprefix(f"{region}_")
+                pollutant_name = {
+                    ("great_lakes", "line"): "line",
+                    ("great_lakes", "can"): "can",
+                    ("amazon", "lost_net"): "net",
+                    ("amazon", "mining_drum"): "drum",
+                    ("arctic", "ghost_net"): "net",
+                    ("arctic", "fuel_canister"): "canister",
+                }.get((region, asset_name), asset_name)
+                sprite = scaled_sprite(
+                    load_sprite(
+                        f"regions/{region}/pollution",
+                        pollutant_name,
+                    ),
+                    (90, 90),
+                )
+                screen.blit(sprite, sprite.get_rect(center=(panel.x + 59, panel.y + 56)))
+            else:
+                self._draw_pollutant_art(
+                    screen,
+                    illustration,
+                    (panel.x + 59, panel.y + 56),
+                )
         else:
-            content_top = panel.y + 116
             WildlifeSystem.draw_card_illustration(
                 screen,
                 profile,
                 (panel.x + 59, panel.y + 56),
             )
 
-        self._fit_text(
+        title_rect = self._fit_text(
             screen,
             self.heading_font,
             str(profile["name"]),
             settings.WHITE,
-            (settings.WIDTH // 2 + (35 if not is_pollutant else 0), panel.y + 48),
-            panel.width - (112 if not is_pollutant else 50),
+            (settings.WIDTH // 2 + 35, panel.y + 38),
+            panel.width - 112,
         )
-        self._fit_text(
-            screen,
+        subtitle_image = self._fit_surface(
             self.small_font,
             f'{str(profile["kind"]).upper()}  |  {profile["habitat"]}',
             settings.PALE_AQUA,
-            (settings.WIDTH // 2, panel.y + 86),
             panel.width - 60,
         )
-        if is_pollutant:
-            about_y = content_top
-            impact_y = panel.y + 266
-            source_y = panel.y + 394
-        else:
-            about_y = content_top
-            impact_y = content_top + 91
-            source_y = panel.y + 394
-        self._draw_wrapped_section(
-            screen, "ABOUT", str(profile["fact"]), panel.x + 34, about_y, panel.width - 68
+        subtitle_rect = subtitle_image.get_rect(
+            midtop=(settings.WIDTH // 2, title_rect.bottom + 8)
         )
+        screen.blit(subtitle_image, subtitle_rect)
+        content_top = max(panel.y + 116, subtitle_rect.bottom + 12)
+        about_bottom = self._draw_wrapped_section(
+            screen,
+            "ABOUT",
+            str(profile["fact"]),
+            panel.x + 34,
+            content_top,
+            panel.width - 68,
+        )
+        impact_y = about_bottom + 10
         self._draw_wrapped_section(
             screen,
             "ENVIRONMENTAL IMPACT",
@@ -227,6 +371,7 @@ class GameUI:
             panel.width - 68,
             (210, 241, 229),
         )
+        source_y = panel.y + 394
         source_image = self._fit_surface(
             self.small_font,
             f'Source: {profile["source_label"]}  [open]',
@@ -317,7 +462,7 @@ class GameUI:
         top: int,
         max_width: int,
         color: tuple[int, int, int] = settings.WHITE,
-    ) -> None:
+    ) -> int:
         heading_image = self.small_font.render(heading, True, (255, 220, 150))
         screen.blit(heading_image, (left, top))
         lines: list[str] = []
@@ -331,15 +476,45 @@ class GameUI:
                 line = candidate
         if line:
             lines.append(line)
+        line_height = self.small_font.get_linesize()
+        text_top = top + heading_image.get_height() + 4
         for index, content in enumerate(lines[:3]):
-            screen.blit(self.small_font.render(content, True, color), (left, top + 24 + index * 21))
+            screen.blit(
+                self.small_font.render(content, True, color),
+                (left, text_top + index * line_height),
+            )
+        return text_top + min(3, len(lines)) * line_height
 
-    def draw_result(self, screen: pygame.Surface, victory: bool, score: int) -> None:
+    def draw_result(
+        self,
+        screen: pygame.Surface,
+        victory: bool,
+        score: int,
+        region_id: str = "gulf",
+    ) -> None:
         overlay = pygame.Surface((settings.WIDTH, settings.HEIGHT), pygame.SRCALPHA)
         overlay.fill((4, 25, 49, 155))
         screen.blit(overlay, (0, 0))
-        title = "REEF RESTORED!" if victory else "DIVE OVER"
-        subtitle = "Your care brought the reef back to life." if victory else "The reef still needs you. Take a breath and try again."
+        normalized_region = normalize_region_id(region_id)
+        title = {
+            "gulf": "REEF RESTORED!",
+            "mediterranean": "MEADOW RESTORED!",
+            "arctic": "HABITAT RESTORED!",
+            "great_lakes": "HABITAT RESTORED!",
+            "amazon": "RIVER RESTORED!",
+        }[normalized_region] if victory else "DIVE OVER"
+        habitat = {
+            "gulf": "reef",
+            "mediterranean": "seagrass meadow",
+            "arctic": "Arctic habitat",
+            "great_lakes": "freshwater habitat",
+            "amazon": "river habitat",
+        }[normalized_region]
+        subtitle = (
+            f"Your care helped the {habitat} recover."
+            if victory
+            else f"The {habitat} still needs you. Take a breath and try again."
+        )
         self._text(screen, self.heading_font, title, settings.WHITE, (settings.WIDTH // 2, 280))
         self._text(screen, self.body_font, subtitle, settings.PALE_AQUA, (settings.WIDTH // 2, 339))
         self._text(screen, self.body_font, f"Pollution collected: {score}", settings.WHITE, (settings.WIDTH // 2, 394))

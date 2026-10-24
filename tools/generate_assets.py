@@ -1,7 +1,9 @@
 """Generate Tidekeeper's original pixel-inspired PNG artwork once."""
 
 from pathlib import Path
+import math
 import random
+import sys
 
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -365,6 +367,723 @@ def make_backdrop() -> None:
     save(image, "backgrounds", "gulf_backdrop")
 
 
+def make_mediterranean_fish(
+    name: str,
+    body: tuple[int, int, int],
+    highlight: tuple[int, int, int],
+    accent: tuple[int, int, int],
+    pattern: str,
+) -> None:
+    image = Image.new("RGBA", (120, 78))
+    draw = ImageDraw.Draw(image)
+    if pattern == "sardine":
+        body_shape = [(17, 40), (31, 28), (55, 25), (82, 30), (99, 37), (112, 40), (98, 44), (78, 51), (52, 53), (30, 48)]
+        tail = [(22, 40), (7, 27), (11, 40), (7, 53)]
+    else:
+        body_shape = [(16, 40), (27, 23), (48, 15), (70, 17), (91, 28), (105, 39), (92, 47), (73, 59), (49, 62), (28, 54)]
+        tail = [(25, 40), (8, 22), (12, 40), (8, 58)]
+    draw.polygon(tail, fill=INK)
+    draw.polygon([(x + 2, y) for x, y in tail], fill=accent)
+    draw.polygon(body_shape, fill=INK)
+    draw.polygon([(x + 3, y + 3) for x, y in body_shape], fill=body)
+    draw.polygon([(34, 30), (53, 22), (76, 26), (92, 35), (73, 37), (49, 35)], fill=highlight)
+    draw.polygon([(51, 20), (62, 5), (74, 22)], fill=INK)
+    draw.polygon([(55, 20), (62, 10), (70, 22)], fill=accent)
+    draw.polygon([(53, 56), (64, 70), (75, 56)], fill=INK)
+    draw.polygon([(57, 56), (64, 65), (70, 56)], fill=accent)
+    draw.polygon([(52, 39), (67, 49), (45, 48)], fill=INK)
+    draw.polygon([(55, 40), (64, 47), (49, 46)], fill=highlight)
+    if pattern == "bream":
+        draw.line((35, 30, 34, 51), fill=accent, width=3)
+        draw.line((42, 27, 41, 54), fill=(247, 226, 175, 255), width=2)
+        draw.line((79, 29, 77, 52), fill=(242, 222, 165, 255), width=2)
+    elif pattern == "grouper":
+        for x, y, radius in ((40, 35, 3), (53, 29, 3), (69, 34, 4), (81, 42, 3), (59, 49, 3), (38, 46, 2)):
+            draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=accent)
+    else:
+        draw.line((31, 39, 91, 39), fill=(217, 237, 224, 255), width=3)
+        draw.line((29, 35, 86, 32), fill=(120, 161, 174, 255), width=1)
+    draw.ellipse((91, 33, 97, 39), fill=(255, 237, 199, 255))
+    draw.ellipse((93, 34, 96, 37), fill=INK)
+    draw.line((101, 42, 106, 42), fill=(250, 236, 207, 255), width=2)
+    save(image, "fish", name)
+
+
+def make_mediterranean_octopus() -> None:
+    image = Image.new("RGBA", (144, 128))
+    draw = ImageDraw.Draw(image)
+    mantle = [(55, 51), (52, 35), (60, 17), (77, 8), (96, 14), (108, 32), (105, 51), (91, 61), (69, 61)]
+    draw.polygon([(x + 3, y + 3) for x, y in mantle], fill=INK)
+    draw.polygon(mantle, fill=(194, 111, 111, 255))
+    draw.ellipse((62, 19, 100, 54), fill=(218, 137, 128, 255))
+    draw.ellipse((68, 28, 73, 34), fill=(244, 218, 191, 255))
+    draw.ellipse((88, 27, 94, 33), fill=(244, 218, 191, 255))
+    draw.ellipse((70, 30, 73, 33), fill=INK)
+    draw.ellipse((89, 29, 92, 32), fill=INK)
+    arms = (
+        [(64, 51), (51, 69), (31, 68), (22, 82), (26, 96)],
+        [(70, 54), (63, 76), (45, 83), (42, 101), (48, 113)],
+        [(77, 55), (77, 78), (66, 94), (70, 111), (78, 118)],
+        [(84, 54), (91, 75), (87, 91), (99, 101), (111, 99)],
+        [(92, 51), (108, 67), (123, 67), (130, 81), (126, 94)],
+    )
+    for points in arms:
+        draw.line(points, fill=INK, width=10, joint="curve")
+        draw.line(points, fill=(177, 91, 100, 255), width=6, joint="curve")
+        for x, y in points[1:-1]:
+            draw.ellipse((x - 2, y - 2, x + 2, y + 2), fill=(243, 194, 165, 255))
+    save(image, "animals", "common_octopus")
+
+
+def make_loggerhead_turtle() -> None:
+    image = Image.new("RGBA", (112, 100))
+    draw = ImageDraw.Draw(image)
+    for points in (
+        [(39, 44), (20, 26), (12, 31), (20, 54), (36, 60)],
+        [(71, 43), (87, 23), (99, 29), (90, 52), (76, 59)],
+        [(39, 60), (19, 76), (27, 90), (48, 72)],
+        [(70, 60), (88, 77), (80, 91), (62, 72)],
+    ):
+        draw.polygon(points, fill=INK)
+        draw.polygon([(x, y - 2) for x, y in points], fill=(190, 132, 91, 255))
+        draw.line(points[:3], fill=(229, 184, 128, 255), width=2)
+    draw.ellipse((79, 43, 109, 68), fill=INK)
+    draw.ellipse((82, 45, 105, 65), fill=(207, 153, 105, 255))
+    draw.ellipse((99, 50, 103, 54), fill=INK)
+    draw.ellipse((31, 31, 81, 74), fill=INK)
+    draw.ellipse((35, 34, 77, 70), fill=(118, 77, 60, 255))
+    draw.ellipse((40, 38, 72, 66), fill=(166, 112, 76, 255))
+    for points in (
+        [(55, 38), (47, 46), (51, 57), (61, 63), (70, 55), (67, 45), (55, 38)],
+        [(39, 42), (47, 46), (46, 57), (40, 63)],
+        [(73, 42), (66, 47), (68, 57), (74, 63)],
+    ):
+        draw.line(points, fill=(103, 67, 54, 255), width=2, joint="curve")
+    draw.ellipse((44, 43, 49, 48), fill=(215, 168, 112, 255))
+    draw.ellipse((63, 56, 68, 61), fill=(215, 168, 112, 255))
+    save(image, "animals", "loggerhead_turtle")
+
+
+def make_mediterranean_diver() -> None:
+    image = Image.new("RGBA", (128, 88))
+    draw = ImageDraw.Draw(image)
+    draw.polygon([(29, 47), (18, 55), (7, 52), (2, 59), (15, 66), (39, 60), (51, 51)], fill=INK)
+    draw.polygon([(30, 49), (19, 57), (9, 54), (7, 59), (17, 62), (39, 57)], fill=(203, 89, 91, 255))
+    draw.polygon([(42, 52), (28, 65), (15, 66), (11, 72), (26, 76), (53, 62), (57, 52)], fill=INK)
+    draw.polygon([(43, 55), (30, 66), (18, 68), (16, 72), (27, 73), (51, 60)], fill=(230, 124, 95, 255))
+    draw.rounded_rectangle((40, 19, 64, 61), radius=8, fill=INK)
+    draw.rounded_rectangle((44, 21, 61, 57), radius=6, fill=(182, 159, 127, 255))
+    draw.rectangle((49, 26, 53, 51), fill=(235, 216, 180, 255))
+    draw.rectangle((45, 33, 61, 37), fill=(129, 111, 99, 255))
+    draw.line((63, 29, 69, 36, 68, 45), fill=(61, 58, 64, 255), width=3)
+    draw.polygon([(52, 32), (62, 25), (79, 28), (92, 37), (88, 47), (73, 49), (63, 56), (49, 51)], fill=INK)
+    draw.polygon([(56, 34), (65, 29), (78, 31), (87, 38), (83, 43), (70, 45), (62, 52), (53, 49)], fill=(201, 93, 92, 255))
+    draw.line((68, 37, 84, 32, 101, 34), fill=INK, width=11)
+    draw.line((69, 37, 84, 33, 101, 35), fill=(201, 93, 92, 255), width=6)
+    draw.ellipse((98, 29, 110, 40), fill=INK)
+    draw.ellipse((100, 31, 108, 38), fill=(229, 218, 190, 255))
+    draw.ellipse((77, 16, 112, 49), fill=INK)
+    draw.ellipse((80, 18, 109, 46), fill=(216, 170, 133, 255))
+    draw.rounded_rectangle((88, 23, 111, 39), radius=6, fill=(70, 51, 60, 255))
+    draw.rounded_rectangle((91, 25, 108, 36), radius=4, fill=(154, 211, 207, 255))
+    draw.line((94, 27, 103, 27), fill=(248, 230, 204, 255), width=2)
+    draw.ellipse((85, 39, 92, 45), fill=(240, 212, 176, 255))
+    save(image, "player", "mediterranean_diver")
+
+
+def make_mediterranean_jellyfish() -> None:
+    image = Image.new("RGBA", (84, 96))
+    draw = ImageDraw.Draw(image)
+    draw.pieslice((12, 8, 72, 64), 180, 360, fill=INK)
+    draw.pieslice((16, 11, 68, 60), 180, 360, fill=(177, 101, 131, 255))
+    draw.arc((23, 17, 61, 52), 205, 335, fill=(237, 170, 175, 255), width=3)
+    draw.rectangle((15, 33, 69, 41), fill=INK)
+    draw.rectangle((19, 34, 65, 39), fill=(177, 101, 131, 255))
+    draw.line((22, 35, 62, 35), fill=(237, 170, 175, 255), width=2)
+    for x in (26, 38, 50, 61):
+        draw.line((x, 39, x - 4, 55, x + 2, 72, x - 1, 91), fill=INK, width=4)
+        draw.line((x, 40, x - 3, 55, x + 2, 72, x, 90), fill=(224, 151, 162, 255), width=2)
+    draw.ellipse((31, 31, 36, 36), fill=(250, 215, 196, 255))
+    draw.ellipse((47, 31, 52, 36), fill=(250, 215, 196, 255))
+    save(image, "animals", "mediterranean_moon_jellyfish")
+
+
+def make_mediterranean_barracuda() -> None:
+    image = Image.new("RGBA", (154, 76))
+    draw = ImageDraw.Draw(image)
+    body = [(15, 40), (34, 29), (63, 25), (94, 28), (119, 34), (143, 38), (122, 43), (95, 49), (65, 53), (37, 49)]
+    tail = [(22, 40), (5, 22), (11, 40), (5, 58)]
+    draw.polygon(tail, fill=INK)
+    draw.polygon([(x + 3, y) for x, y in tail], fill=(131, 143, 139, 255))
+    draw.polygon(body, fill=INK)
+    draw.polygon([(x + 3, y + 3) for x, y in body], fill=(158, 166, 154, 255))
+    draw.polygon([(44, 33), (76, 29), (112, 34), (129, 39), (92, 39), (54, 39)], fill=(209, 208, 186, 255))
+    draw.polygon([(74, 28), (91, 8), (101, 30)], fill=INK)
+    draw.polygon([(79, 28), (91, 14), (97, 29)], fill=(115, 132, 127, 255))
+    draw.polygon([(68, 51), (80, 66), (94, 50)], fill=INK)
+    draw.polygon([(73, 51), (81, 61), (89, 50)], fill=(119, 137, 130, 255))
+    for x in (57, 72, 87, 102):
+        draw.line((x, 32, x - 2, 49), fill=(116, 131, 128, 255), width=2)
+    draw.polygon([(133, 35), (153, 29), (144, 39), (153, 45), (133, 43)], fill=INK)
+    draw.ellipse((121, 33, 126, 38), fill=(241, 225, 197, 255))
+    draw.ellipse((123, 34, 126, 37), fill=INK)
+    draw.line((131, 42, 145, 41), fill=(49, 56, 56, 255), width=2)
+    save(image, "animals", "mediterranean_barracuda")
+
+
+def make_mediterranean_bubble() -> None:
+    image = Image.new("RGBA", (30, 30))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((3, 3, 26, 26), fill=(196, 140, 173, 90), outline=(250, 220, 218, 205), width=2)
+    draw.arc((5, 4, 24, 25), 195, 295, fill=(255, 238, 220, 235), width=2)
+    draw.ellipse((8, 7, 12, 11), fill=(255, 239, 232, 225))
+    save(image, "effects", "mediterranean_bubble")
+
+
+def make_mediterranean_debris() -> None:
+    bottle = Image.new("RGBA", (42, 54))
+    draw = ImageDraw.Draw(bottle)
+    draw.rounded_rectangle((13, 3, 28, 12), radius=3, fill=INK)
+    draw.rounded_rectangle((15, 5, 26, 12), radius=2, fill=(191, 145, 116, 255))
+    draw.polygon(((14, 12), (29, 12), (32, 19), (30, 45), (25, 50), (15, 47), (11, 20)), fill=INK)
+    draw.polygon(((16, 15), (27, 15), (29, 21), (27, 43), (24, 46), (17, 44), (14, 21)), fill=(174, 122, 99, 255))
+    draw.line((16, 20, 27, 20), fill=(224, 180, 151, 255), width=2)
+    save(bottle, "pollution", "mediterranean_bottle")
+
+    can = Image.new("RGBA", (44, 48))
+    draw = ImageDraw.Draw(can)
+    draw.rounded_rectangle((8, 6, 36, 42), radius=6, fill=INK)
+    draw.rounded_rectangle((11, 8, 33, 39), radius=4, fill=(151, 131, 116, 255))
+    draw.ellipse((11, 6, 33, 12), fill=(194, 181, 160, 255), outline=INK, width=2)
+    draw.ellipse((11, 36, 33, 42), fill=(108, 101, 96, 255), outline=INK, width=2)
+    draw.line((15, 17, 29, 17), fill=(217, 201, 180, 255), width=2)
+    draw.line((16, 28, 28, 28), fill=(117, 99, 93, 255), width=2)
+    save(can, "pollution", "mediterranean_can")
+
+    net = Image.new("RGBA", (54, 46))
+    draw = ImageDraw.Draw(net)
+    draw.line(((4, 8), (45, 5), (50, 35), (12, 40), (4, 8)), fill=INK, width=5, joint="curve")
+    for points in (
+        ((7, 10), (15, 38)),
+        ((17, 8), (23, 38)),
+        ((28, 7), (32, 37)),
+        ((40, 7), (42, 36)),
+        ((5, 18), (48, 15)),
+        ((8, 28), (49, 25)),
+        ((11, 37), (50, 34)),
+    ):
+        draw.line(points, fill=(139, 122, 91, 255), width=2)
+    draw.line(((4, 8), (45, 5), (50, 35), (12, 40), (4, 8)), fill=(187, 166, 129, 255), width=2)
+    save(net, "pollution", "mediterranean_net")
+
+
+def make_posidonia() -> None:
+    image = Image.new("RGBA", (150, 174))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((31, 153, 119, 170), fill=(67, 90, 73, 255))
+    blades = (
+        ((70, 157), (49, 112), (34, 60), (40, 12)),
+        ((74, 158), (66, 113), (62, 66), (69, 7)),
+        ((77, 158), (89, 115), (105, 75), (111, 23)),
+        ((72, 160), (51, 127), (24, 94), (13, 49)),
+        ((80, 160), (99, 130), (127, 101), (137, 61)),
+        ((76, 158), (77, 121), (84, 81), (90, 35)),
+    )
+    for index, blade in enumerate(blades):
+        shade = (31, 97 + index % 3 * 10, 91 + index % 2 * 14, 255)
+        draw.line(blade, fill=(26, 66, 66, 255), width=12, joint="curve")
+        draw.line(blade, fill=shade, width=8, joint="curve")
+        draw.line([(x - 2, y) for x, y in blade], fill=(135, 183, 139, 255), width=2, joint="curve")
+    save(image, "plants", "posidonia")
+
+
+def make_mediterranean_rock(name: str) -> None:
+    image = Image.new("RGBA", (180, 116))
+    draw = ImageDraw.Draw(image)
+    points = [(10, 91), (18, 67), (37, 53), (48, 33), (69, 37), (91, 17), (115, 33), (140, 29), (166, 57), (174, 91), (151, 105), (26, 106)]
+    draw.polygon(points, fill=INK)
+    draw.polygon([(x + 4, y + 4) for x, y in points], fill=(145, 139, 119, 255))
+    draw.polygon([(27, 71), (49, 40), (73, 45), (91, 27), (113, 44), (84, 57), (64, 70), (42, 65)], fill=(192, 180, 151, 255))
+    draw.polygon([(98, 55), (124, 40), (150, 60), (139, 76), (113, 71)], fill=(115, 123, 112, 255))
+    randomizer = random.Random(812)
+    for _ in range(50):
+        x = randomizer.randint(23, 155)
+        y = randomizer.randint(57, 96)
+        draw.ellipse((x, y, x + 2, y + 2), fill=randomizer.choice(((86, 111, 103, 255), (218, 203, 169, 255), (110, 99, 84, 255))))
+    save(image, "terrain", name)
+
+
+def make_rock_arch() -> None:
+    image = Image.new("RGBA", (420, 290))
+    draw = ImageDraw.Draw(image)
+    outer = [(12, 282), (25, 194), (58, 134), (90, 83), (130, 48), (178, 35), (225, 43), (266, 68), (300, 103), (334, 151), (369, 201), (407, 282)]
+    draw.polygon(outer, fill=INK)
+    inner = [(78, 282), (87, 212), (107, 164), (131, 127), (158, 105), (187, 96), (215, 101), (241, 122), (265, 155), (286, 199), (303, 282)]
+    draw.polygon([(x + 6, y + 5) for x, y in outer], fill=(135, 137, 120, 255))
+    draw.polygon(inner, fill=(0, 0, 0, 0))
+    draw.line(((57, 157), (94, 108), (133, 70), (175, 56), (218, 60), (260, 82), (293, 120)), fill=(203, 189, 153, 255), width=8, joint="curve")
+    for x, y in ((55, 224), (111, 193), (322, 221), (351, 242), (146, 84), (271, 102)):
+        draw.ellipse((x, y, x + 9, y + 6), fill=(78, 115, 98, 255))
+    save(image, "terrain", "mediterranean_rock_arch")
+
+
+def make_amphora() -> None:
+    image = Image.new("RGBA", (116, 142))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((39, 8, 77, 21), fill=INK)
+    draw.ellipse((43, 11, 73, 17), fill=(183, 126, 82, 255))
+    body = [(42, 19), (33, 29), (30, 42), (36, 56), (36, 88), (28, 103), (31, 122), (43, 133), (73, 133), (85, 122), (88, 103), (80, 88), (80, 56), (86, 42), (83, 29), (74, 19)]
+    draw.polygon(body, fill=INK)
+    draw.polygon([(x + 4, y + 3) for x, y in body], fill=(170, 111, 73, 255))
+    draw.arc((21, 26, 45, 58), 80, 280, fill=INK, width=6)
+    draw.arc((71, 26, 95, 58), 260, 100, fill=INK, width=6)
+    draw.arc((24, 30, 43, 55), 80, 280, fill=(196, 142, 95, 255), width=3)
+    draw.arc((73, 30, 92, 55), 260, 100, fill=(196, 142, 95, 255), width=3)
+    for y in (39, 92, 111):
+        draw.line((39, y, 77, y), fill=(110, 76, 62, 255), width=3)
+    draw.ellipse((48, 59, 70, 79), outline=(214, 170, 119, 255), width=3)
+    save(image, "landmarks", "amphora")
+
+
+def make_mediterranean_backdrop() -> None:
+    width, height = 1600, 700
+    image = Image.new("RGBA", (width, height))
+    haze = Image.new("RGBA", (width, height))
+    haze_draw = ImageDraw.Draw(haze)
+    for x in range(80, width, 340):
+        haze_draw.polygon(((x, 0), (x + 34, 0), (x + 220, 455), (x + 30, 425)), fill=(220, 248, 230, 29))
+    image.alpha_composite(haze.filter(ImageFilter.GaussianBlur(26)))
+    draw = ImageDraw.Draw(image, "RGBA")
+    far = [(0, 459), (123, 411), (252, 431), (375, 361), (504, 390), (653, 324), (800, 391), (967, 363), (1118, 406), (1283, 347), (1443, 382), (1600, 331), (1600, 700), (0, 700)]
+    near = [(0, 529), (143, 472), (277, 500), (432, 423), (587, 463), (728, 415), (876, 475), (1043, 439), (1196, 489), (1334, 431), (1490, 467), (1600, 424), (1600, 700), (0, 700)]
+    draw.polygon(far, fill=(50, 114, 139, 75))
+    draw.polygon(near, fill=(28, 81, 108, 89))
+    for x, y, scale in ((70, 515, 1.0), (311, 474, 0.75), (612, 503, 0.88), (934, 470, 0.8), (1260, 506, 0.92), (1464, 450, 0.72)):
+        draw.polygon(((x, y + 35 * scale), (x + 24 * scale, y), (x + 56 * scale, y - 17 * scale), (x + 92 * scale, y + 7 * scale), (x + 124 * scale, y + 39 * scale)), fill=(34, 87, 108, 95))
+    for x, y in ((185, 350), (533, 328), (1067, 346), (1398, 312)):
+        draw.ellipse((x, y, x + 24, y + 8), fill=(220, 241, 224, 72))
+        draw.polygon(((x + 4, y + 4), (x - 4, y + 11), (x + 5, y + 7)), fill=(220, 241, 224, 72))
+        draw.polygon(((x + 21, y + 4), (x + 29, y + 11), (x + 20, y + 7)), fill=(220, 241, 224, 72))
+    save(image, "backgrounds", "mediterranean_backdrop")
+
+
+def make_mediterranean_floor() -> None:
+    image = Image.new("RGBA", (256, 96))
+    draw = ImageDraw.Draw(image)
+    randomizer = random.Random(122)
+    for y in range(image.height):
+        shade = round(12 * y / image.height)
+        draw.line((0, y, image.width, y), fill=(174 + shade, 164 + shade, 136 + shade, 255))
+    for _ in range(300):
+        x = randomizer.randrange(image.width)
+        y = randomizer.randrange(image.height)
+        radius = randomizer.choice((1, 1, 2, 3))
+        color = randomizer.choice(((142, 137, 119, 255), (201, 185, 151, 255), (214, 199, 163, 255), (113, 128, 120, 255)))
+        draw.ellipse((x, y, x + radius * 2, y + radius), fill=color)
+    for x, y in ((29, 43), (148, 68), (219, 29)):
+        draw.ellipse((x, y, x + 17, y + 7), fill=(85, 108, 105, 255))
+        draw.arc((x, y - 3, x + 17, y + 8), 185, 350, fill=(210, 190, 151, 255), width=2)
+    save(image, "terrain", "mediterranean_sandy_floor")
+
+
+REGIONAL_PALETTES = {
+    "arctic": ((113, 165, 184), (190, 225, 231), (235, 249, 246), (51, 94, 121)),
+    "great_lakes": ((72, 153, 148), (151, 197, 167), (229, 213, 164), (39, 89, 105)),
+    "amazon": ((184, 116, 83), (224, 160, 115), (236, 201, 145), (81, 70, 67)),
+}
+
+
+def make_regional_backdrop(region: str) -> None:
+    image = Image.new("RGBA", (1600, 760))
+    top, middle, light, deep = REGIONAL_PALETTES[region]
+    pixels = image.load()
+    for y in range(image.height):
+        amount = y / image.height
+        color = tuple(round(top[i] * (1 - amount) + deep[i] * amount) for i in range(3))
+        for x in range(image.width):
+            pixels[x, y] = (*color, 255)
+    haze = Image.new("RGBA", image.size)
+    haze_draw = ImageDraw.Draw(haze)
+    for x in range(60, 1600, 310):
+        haze_draw.polygon(
+            ((x, 0), (x + 30, 0), (x + 205, 500), (x + 8, 470)),
+            fill=(*light, 34),
+        )
+    image.alpha_composite(haze.filter(ImageFilter.GaussianBlur(25)))
+    draw = ImageDraw.Draw(image, "RGBA")
+    draw.polygon(
+        ((0, 490), (170, 415), (330, 445), (510, 358), (670, 422),
+         (820, 370), (1010, 440), (1180, 360), (1390, 421), (1600, 342),
+         (1600, 760), (0, 760)),
+        fill=(*deep, 112),
+    )
+    draw.polygon(
+        ((0, 560), (160, 490), (350, 515), (510, 455), (735, 510),
+         (890, 450), (1080, 525), (1290, 455), (1480, 500), (1600, 440),
+         (1600, 760), (0, 760)),
+        fill=(*middle, 77),
+    )
+    if region == "arctic":
+        draw.polygon(((0, 0), (410, 0), (365, 55), (0, 34)), fill=(231, 248, 249, 220))
+        draw.polygon(((920, 0), (1600, 0), (1600, 45), (1010, 60)), fill=(231, 248, 249, 210))
+        for x in range(150, 1550, 230):
+            draw.ellipse((x, 300 + (x % 120), x + 11, 306 + (x % 120)), fill=(228, 249, 249, 95))
+    elif region == "great_lakes":
+        for x, y in ((175, 375), (520, 339), (980, 354), (1380, 319)):
+            draw.polygon(((x, y), (x + 42, y - 13), (x + 89, y + 2), (x + 38, y + 7)), fill=(207, 232, 197, 92))
+        draw.ellipse((1190, 275, 1206, 280), fill=(231, 246, 212, 120))
+    else:
+        for x in range(-20, 1620, 180):
+            draw.line((x, 0, x + 34, 175), fill=(61, 79, 61, 95), width=8)
+            draw.ellipse((x - 38, 84, x + 82, 184), fill=(72, 105, 74, 98))
+    randomizer = random.Random(180 + len(region))
+    for _ in range(85):
+        x = randomizer.randrange(image.width)
+        y = randomizer.randrange(150, 690)
+        radius = randomizer.choice((1, 2, 3))
+        draw.ellipse((x, y, x + radius, y + radius), fill=(*light, randomizer.randint(28, 75)))
+    save(image, f"regions/{region}/backgrounds", "backdrop")
+
+
+def make_regional_floor_and_rock(region: str) -> None:
+    top, middle, light, deep = REGIONAL_PALETTES[region]
+    floor = Image.new("RGBA", (320, 104))
+    draw = ImageDraw.Draw(floor)
+    randomizer = random.Random(302 + len(region))
+    for y in range(floor.height):
+        amount = y / floor.height
+        color = tuple(round(middle[i] * (1 - amount * 0.2) + deep[i] * amount * 0.2) for i in range(3))
+        draw.line((0, y, floor.width, y), fill=(*color, 255))
+    for _ in range(360):
+        x, y = randomizer.randrange(320), randomizer.randrange(104)
+        color = randomizer.choice(((*light, 255), (*deep, 255), (*middle, 255)))
+        radius = randomizer.choice((1, 1, 2, 3))
+        draw.ellipse((x, y, x + radius * 2, y + radius), fill=color)
+    save(floor, f"regions/{region}/terrain", "floor")
+
+    rock = Image.new("RGBA", (190, 126))
+    draw = ImageDraw.Draw(rock)
+    outline = [(8, 111), (15, 83), (35, 68), (42, 39), (67, 34), (86, 14),
+               (111, 28), (140, 22), (170, 49), (181, 82), (176, 112), (22, 119)]
+    draw.polygon(outline, fill=INK)
+    draw.polygon([(x + 5, y + 4) for x, y in outline], fill=(*middle, 255))
+    draw.polygon([(24, 80), (47, 45), (69, 42), (87, 24), (107, 39), (92, 63), (61, 78)], fill=(*light, 255))
+    draw.polygon([(105, 64), (135, 40), (162, 62), (150, 85), (120, 82)], fill=(*top, 255))
+    for index in range(7):
+        y = 76 + index * 5
+        draw.line((36 + index * 2, y, 150 - index * 4, y + 2), fill=(*deep, 105), width=2)
+    save(rock, f"regions/{region}/terrain", "rock")
+
+
+def make_regional_fish(region: str, name: str) -> None:
+    image = Image.new("RGBA", (144, 86))
+    draw = ImageDraw.Draw(image)
+    top, middle, light, deep = REGIONAL_PALETTES[region]
+    tail = [(27, 42), (7, 22), (12, 43), (7, 64)]
+    body = [(20, 43), (34, 24), (59, 17), (87, 21), (112, 33), (132, 42),
+            (112, 52), (87, 65), (58, 68), (34, 58)]
+    draw.polygon(tail, fill=INK)
+    draw.polygon([(x + 3, y) for x, y in tail], fill=(*top, 255))
+    draw.polygon(body, fill=INK)
+    draw.polygon([(x + 4, y + 3) for x, y in body], fill=(*middle, 255))
+    draw.polygon([(42, 32), (63, 22), (88, 26), (105, 35), (79, 39), (52, 39)], fill=(*light, 255))
+    draw.polygon([(55, 24), (68, 7), (79, 25)], fill=INK)
+    draw.polygon([(60, 23), (69, 13), (76, 24)], fill=(*top, 255))
+    draw.polygon([(66, 62), (75, 79), (88, 62)], fill=INK)
+    draw.polygon([(70, 62), (75, 73), (83, 62)], fill=(*top, 255))
+    if name in ("yellow_perch", "piranha"):
+        for x in (47, 61, 75, 89):
+            draw.line((x, 28, x - 4, 57), fill=(*light, 255), width=4)
+    elif name in ("lake_sturgeon", "arapaima", "tambaqui"):
+        for x in (51, 68, 86, 101):
+            draw.line((x, 25, x + 3, 60), fill=(*deep, 255), width=3)
+        if name == "lake_sturgeon":
+            for x in (38, 47, 56):
+                draw.line((x, 57, x - 3, 68), fill=(*light, 255), width=2)
+    elif name in ("arctic_cod", "polar_cod", "arctic_char", "lake_trout"):
+        draw.line((47, 29, 46, 59), fill=(*light, 255), width=2)
+        draw.line((95, 29, 94, 59), fill=(*light, 255), width=2)
+    else:
+        draw.polygon([(115, 37), (133, 41), (121, 47)], fill=(*light, 255))
+    draw.ellipse((111, 36, 116, 41), fill=(255, 245, 221, 255))
+    draw.ellipse((113, 37, 115, 39), fill=INK)
+    draw.line((126, 47, 133, 46), fill=(*deep, 255), width=2)
+    save(image, f"regions/{region}/fish", name)
+
+
+def make_regional_animal(region: str, name: str) -> None:
+    image = Image.new("RGBA", (220, 136))
+    draw = ImageDraw.Draw(image)
+    top, middle, light, deep = REGIONAL_PALETTES[region]
+    if name == "ringed_seal":
+        draw.ellipse((30, 55, 177, 111), fill=INK)
+        draw.ellipse((37, 59, 171, 104), fill=(*middle, 255))
+        draw.ellipse((144, 49, 196, 91), fill=INK)
+        draw.ellipse((150, 52, 190, 85), fill=(*light, 255))
+        draw.polygon(((59, 95), (34, 127), (81, 103)), fill=INK)
+        draw.polygon(((62, 96), (44, 119), (78, 102)), fill=(*top, 255))
+        draw.polygon(((119, 94), (155, 124), (145, 96)), fill=INK)
+        draw.polygon(((122, 95), (148, 117), (142, 97)), fill=(*top, 255))
+        draw.ellipse((178, 62, 183, 67), fill=INK)
+        for x, y in ((69, 70), (93, 83), (119, 69), (145, 88)):
+            draw.ellipse((x, y, x + 9, y + 8), outline=(*light, 210), width=2)
+    elif name in ("narwhal", "boto", "greenland_shark", "muskellunge", "black_caiman"):
+        body_color = (*middle, 255)
+        body = [(20, 77), (41, 48), (89, 39), (139, 47), (173, 63), (204, 70), (184, 81), (157, 98), (105, 108), (56, 98), (31, 89)]
+        draw.polygon([(x, y + 8) for x, y in body], fill=INK)
+        draw.polygon(body, fill=body_color)
+        draw.polygon([(44, 79), (79, 83), (127, 82), (169, 74), (176, 82), (146, 94), (96, 101), (58, 93)], fill=(*light, 255))
+        draw.polygon([(113, 47), (128, 20), (144, 50)], fill=INK)
+        draw.polygon([(119, 46), (129, 28), (139, 48)], fill=(*top, 255))
+        draw.polygon([(77, 98), (60, 124), (102, 103)], fill=INK)
+        draw.polygon([(80, 99), (66, 116), (96, 102)], fill=(*top, 255))
+        draw.polygon([(181, 66), (214, 52), (201, 73), (214, 91), (181, 82)], fill=INK)
+        if name == "narwhal":
+            draw.line((183, 69, 218, 51), fill=INK, width=7)
+            draw.line((184, 68, 216, 52), fill=(*light, 255), width=3)
+            for offset in range(0, 27, 7):
+                draw.line((189 + offset, 64 - offset // 2, 192 + offset, 68 - offset // 2), fill=(*top, 255), width=2)
+        elif name == "boto":
+            draw.ellipse((182, 69, 218, 81), fill=(*top, 255), outline=INK, width=3)
+            draw.ellipse((184, 63, 190, 69), fill=(*light, 255))
+        elif name == "muskellunge":
+            for x in range(65, 155, 18):
+                draw.line((x, 51, x - 4, 91), fill=(*deep, 240), width=4)
+        elif name == "greenland_shark":
+            for x in (78, 87, 96, 105):
+                draw.line((x, 62, x - 4, 80), fill=(*deep, 255), width=2)
+        if name == "black_caiman":
+            for x in range(62, 171, 13):
+                draw.polygon(((x, 51), (x + 7, 43), (x + 13, 53)), fill=(*light, 255))
+            draw.ellipse((178, 67, 182, 71), fill=INK)
+        else:
+            draw.ellipse((177, 66, 183, 72), fill=(255, 246, 220, 255))
+            draw.ellipse((179, 67, 182, 70), fill=INK)
+    elif name == "lions_mane":
+        draw.ellipse((61, 17, 158, 82), fill=INK)
+        draw.ellipse((67, 21, 152, 77), fill=(*middle, 245))
+        draw.arc((77, 28, 142, 70), 180, 360, fill=(*light, 255), width=5)
+        for x in (70, 84, 99, 114, 130, 145):
+            draw.line((x, 74, x - 9, 129), fill=(*top, 255), width=4)
+            draw.line((x + 4, 75, x + 13, 130), fill=(*light, 220), width=2)
+    elif name == "stingray":
+        draw.polygon(((67, 58), (21, 92), (75, 79), (110, 96), (150, 79), (204, 93), (151, 55), (111, 45)), fill=INK)
+        draw.polygon(((73, 59), (36, 87), (78, 74), (110, 89), (147, 74), (190, 87), (147, 59), (111, 50)), fill=(*middle, 255))
+        draw.line((113, 88, 171, 124), fill=(*deep, 255), width=3)
+        draw.ellipse((99, 66, 104, 70), fill=INK)
+        draw.ellipse((119, 66, 124, 70), fill=INK)
+    elif name in ("mussels", "zebra_mussels"):
+        for x, y in ((38, 73), (78, 50), (113, 77), (151, 51), (174, 83)):
+            draw.ellipse((x - 23, y - 26, x + 23, y + 25), fill=INK)
+            draw.ellipse((x - 18, y - 22, x + 18, y + 20), fill=(*middle, 255))
+            for offset in range(-10, 11, 6):
+                color = (*light, 255) if name == "mussels" or offset % 2 else (*deep, 255)
+                draw.arc((x - 15 + offset, y - 18, x + 13 + offset, y + 18), 280, 85, fill=color, width=2)
+    elif name == "river_turtle":
+        draw.ellipse((48, 35, 163, 106), fill=INK)
+        draw.ellipse((54, 40, 157, 100), fill=(*middle, 255))
+        draw.ellipse((165, 51, 209, 82), fill=INK)
+        draw.ellipse((169, 54, 204, 78), fill=(*light, 255))
+        draw.ellipse((197, 60, 201, 64), fill=INK)
+        for x, y in ((62, 34), (132, 33), (61, 94), (132, 97)):
+            draw.ellipse((x, y, x + 31, y + 24), fill=(*top, 255), outline=INK, width=4)
+        draw.polygon(((87, 44), (111, 52), (102, 69), (80, 63)), outline=INK)
+        draw.polygon(((112, 73), (131, 78), (119, 93), (99, 84)), outline=INK)
+    elif name == "sea_lamprey":
+        draw.arc((19, 25, 201, 115), 185, 350, fill=INK, width=23)
+        draw.arc((22, 29, 198, 111), 185, 350, fill=(*middle, 255), width=15)
+        draw.ellipse((18, 67, 43, 90), fill=(186, 95, 96, 255), outline=INK, width=3)
+        for angle in range(0, 360, 45):
+            x = 30 + round(7 * math.cos(angle))
+            y = 78 + round(7 * math.sin(angle))
+            draw.ellipse((x, y, x + 3, y + 3), fill=(*light, 255))
+    save(image, f"regions/{region}/animals", name)
+
+
+def make_regional_plant(region: str, name: str) -> None:
+    image = Image.new("RGBA", (210, 135) if name == "water_lily" else (190, 220))
+    draw = ImageDraw.Draw(image)
+    top, middle, light, deep = REGIONAL_PALETTES[region]
+    if name == "kelp":
+        draw.ellipse((46, 195, 146, 212), fill=(*deep, 255))
+        for index, x in enumerate((57, 75, 94, 114, 132)):
+            points = [(x, 201), (x - 15 + index * 2, 151), (x + 10, 100), (x + 2, 48 - index * 3)]
+            draw.line(points, fill=INK, width=13)
+            draw.line(points, fill=(*middle, 255), width=8)
+            draw.line([(px - 2, py) for px, py in points], fill=(*light, 255), width=2)
+            draw.ellipse((x - 11, 140 - index * 9, x + 8, 158 - index * 9), fill=(*top, 255))
+    elif name == "wild_rice":
+        draw.ellipse((35, 198, 159, 214), fill=(*deep, 255))
+        for index, x in enumerate((54, 78, 103, 129, 149)):
+            top_y = 24 + index % 2 * 20
+            draw.line((x, 202, x + (index - 2) * 4, top_y + 25), fill=INK, width=7)
+            draw.line((x, 200, x + (index - 2) * 4, top_y + 25), fill=(*middle, 255), width=4)
+            for seed in range(5):
+                sy = top_y + 24 + seed * 8
+                draw.ellipse((x - 2 + seed % 2 * 6, sy, x + 4 + seed % 2 * 6, sy + 9), fill=(*light, 255))
+            for side in (-1, 1):
+                draw.line((x, 160 - index * 3, x + side * 24, 142 - index * 3), fill=(*top, 255), width=4)
+    else:
+        for x, y, radius in ((48, 82, 42), (105, 92, 48), (165, 79, 37)):
+            draw.ellipse((x - radius, y - radius // 2, x + radius, y + radius // 2), fill=INK)
+            draw.ellipse((x - radius + 4, y - radius // 2 + 4, x + radius - 4, y + radius // 2 - 4), fill=(*middle, 255))
+            draw.line((x, y, x + 4, y - radius // 2 + 10), fill=(*light, 255), width=3)
+            draw.line((x, y, x - 8, y + 7), fill=(*top, 255), width=2)
+        draw.ellipse((91, 13, 124, 46), fill=(*light, 255), outline=INK, width=4)
+        for angle in range(0, 360, 45):
+            radians = math.radians(angle)
+            px = 107 + round(17 * math.cos(radians))
+            py = 29 + round(17 * math.sin(radians))
+            draw.ellipse((px - 3, py - 3, px + 3, py + 3), fill=(*top, 255))
+    save(image, f"regions/{region}/plants", name)
+
+
+def make_regional_landmark(region: str, name: str) -> None:
+    top, middle, light, deep = REGIONAL_PALETTES[region]
+    dimensions = {
+        "ice_shelf": (520, 220),
+        "shipwreck": (420, 250),
+        "flooded_forest": (380, 280),
+        "forest_roots": (300, 240),
+    }
+    image = Image.new("RGBA", dimensions[name])
+    draw = ImageDraw.Draw(image)
+    if name == "ice_shelf":
+        draw.polygon(((0, 30), (82, 19), (166, 28), (240, 12), (330, 22), (411, 8), (520, 20), (520, 80), (0, 86)), fill=(*light, 255))
+        draw.polygon(((0, 77), (82, 89), (152, 78), (230, 96), (330, 82), (405, 97), (520, 80), (520, 220), (0, 220)), fill=(*middle, 245))
+        draw.polygon(((45, 85), (116, 91), (152, 220), (74, 220)), fill=(*top, 175))
+        draw.polygon(((320, 87), (399, 92), (438, 220), (363, 220)), fill=(*top, 175))
+        draw.line((0, 100, 520, 100), fill=(*light, 180), width=3)
+    elif name == "shipwreck":
+        draw.polygon(((22, 158), (91, 165), (135, 190), (344, 189), (398, 155), (373, 216), (78, 221)), fill=INK)
+        draw.polygon(((36, 161), (101, 170), (144, 193), (337, 191), (380, 160), (358, 204), (81, 208)), fill=(*middle, 255))
+        draw.polygon(((150, 155), (154, 56), (162, 56), (169, 156)), fill=INK)
+        draw.polygon(((158, 61), (220, 128), (165, 127)), fill=(*light, 255))
+        draw.line((160, 66, 160, 163), fill=(*deep, 255), width=5)
+        draw.line((255, 168, 255, 94), fill=INK, width=8)
+        draw.polygon(((247, 96), (260, 89), (270, 98), (263, 105)), fill=(*top, 255))
+        for x in (112, 299, 344):
+            draw.line((x, 176, x + 18, 183), fill=(*light, 255), width=3)
+    elif name == "flooded_forest":
+        draw.rectangle((0, 0, 380, 76), fill=(*deep, 175))
+        for x in (26, 90, 166, 244, 331):
+            draw.line((x, 0, x + 5, 142), fill=INK, width=24)
+            draw.line((x + 2, 2, x + 7, 138), fill=(*deep, 255), width=16)
+            draw.ellipse((x - 28, 0, x + 34, 61), fill=(*middle, 220))
+            for root in range(3):
+                draw.line((x + 5, 117, x - 22 + root * 19, 277), fill=INK, width=8)
+                draw.line((x + 5, 119, x - 22 + root * 19, 274), fill=(*top, 255), width=4)
+        draw.line((0, 190, 380, 190), fill=(*light, 170), width=4)
+    else:
+        for x in (34, 102, 165, 237, 282):
+            draw.line((x, 0, x - 4, 118), fill=INK, width=19)
+            draw.line((x - 3, 12, x - 38, 92), fill=(*middle, 255), width=12)
+            draw.line((x - 4, 58, x + 39, 142), fill=(*top, 255), width=10)
+            draw.line((x - 4, 106, x - 26, 230), fill=(*deep, 255), width=8)
+        draw.polygon(((0, 185), (300, 178), (300, 240), (0, 240)), fill=(*deep, 120))
+    save(image, f"regions/{region}/landmarks", name)
+
+
+def make_regional_pollution(region: str, name: str) -> None:
+    image = Image.new("RGBA", (100, 88))
+    draw = ImageDraw.Draw(image)
+    accent = (226, 184, 112, 255)
+    top = REGIONAL_PALETTES[region][0]
+    middle = REGIONAL_PALETTES[region][1]
+    light = REGIONAL_PALETTES[region][2]
+    if name in ("plastic", "canister", "can", "drum"):
+        size = (29, 53) if name in ("plastic", "canister") else (41, 49) if name == "can" else (51, 60)
+        x0, y0 = (35, 18) if size[0] < 40 else (25, 19)
+        x1, y1 = x0 + size[0], y0 + size[1]
+        draw.rounded_rectangle((x0 - 4, y0 - 5, x1 + 4, y1 + 3), radius=8, fill=INK)
+        color = (114, 183, 189, 255) if name == "plastic" else (178, 160, 108, 255)
+        draw.rounded_rectangle((x0, y0, x1, y1), radius=7, fill=color)
+        draw.ellipse((x0, y0 - 5, x1, y0 + 5), fill=(*light, 255), outline=INK, width=2)
+        draw.line((x0 + 5, y0 + 14, x1 - 5, y0 + 14), fill=accent, width=3)
+    elif name in ("net", "line"):
+        draw.polygon(((12, 18), (87, 27), (78, 70), (20, 65)), fill=(*middle, 65), outline=INK)
+        for x in range(18, 86, 12):
+            draw.line((x, 20, x - 3, 66), fill=accent, width=2)
+        for y in range(27, 70, 10):
+            draw.line((15, y, 82, y + 3), fill=accent, width=2)
+        if name == "line":
+            draw.line((7, 9, 89, 80), fill=(*light, 255), width=3)
+            draw.line((89, 11, 13, 80), fill=(*top, 255), width=2)
+    save(image, f"regions/{region}/pollution", name)
+
+
+def make_regional_diver_and_bubble(region: str) -> None:
+    top, middle, light, deep = REGIONAL_PALETTES[region]
+    image = Image.new("RGBA", (128, 88))
+    draw = ImageDraw.Draw(image)
+    suit = {"arctic": (210, 230, 232, 255), "great_lakes": (225, 173, 99, 255), "amazon": (226, 123, 92, 255)}[region]
+    draw.polygon(((19, 50), (4, 60), (20, 69), (49, 57)), fill=INK)
+    draw.polygon(((22, 51), (11, 60), (22, 65), (48, 56)), fill=(*top, 255))
+    draw.polygon(((41, 51), (25, 68), (12, 72), (24, 79), (54, 62)), fill=INK)
+    draw.polygon(((43, 53), (29, 67), (19, 71), (28, 75), (51, 60)), fill=suit)
+    draw.rounded_rectangle((43, 19, 65, 59), radius=7, fill=INK)
+    draw.rounded_rectangle((47, 22, 61, 55), radius=5, fill=(*middle, 255))
+    draw.line((55, 28, 55, 48), fill=(*light, 255), width=3)
+    draw.polygon(((54, 32), (67, 25), (83, 29), (93, 39), (87, 49), (67, 48), (54, 56)), fill=INK)
+    draw.polygon(((58, 34), (68, 29), (81, 32), (88, 39), (83, 45), (66, 45), (56, 52)), fill=suit)
+    draw.line((68, 36, 86, 30, 104, 32), fill=INK, width=10)
+    draw.line((70, 36, 86, 32, 102, 34), fill=suit, width=5)
+    draw.ellipse((100, 28, 111, 39), fill=INK)
+    draw.ellipse((102, 30, 109, 37), fill=(*light, 255))
+    draw.ellipse((79, 16, 111, 47), fill=INK)
+    draw.ellipse((82, 18, 108, 43), fill=suit)
+    draw.rounded_rectangle((90, 24, 110, 37), radius=5, fill=(*deep, 255))
+    draw.rounded_rectangle((93, 26, 107, 35), radius=4, fill=(*top, 255))
+    draw.line((95, 28, 102, 28), fill=(*light, 255), width=2)
+    save(image, f"regions/{region}/player", "diver")
+    bubble = Image.new("RGBA", (28, 28))
+    bd = ImageDraw.Draw(bubble)
+    bd.ellipse((3, 3, 24, 24), fill=(*top, 75), outline=(*light, 210), width=2)
+    bd.arc((5, 4, 23, 23), 200, 300, fill=(255, 255, 255, 235), width=2)
+    bd.ellipse((8, 6, 11, 9), fill=(255, 255, 255, 240))
+    save(bubble, f"regions/{region}/effects", "bubble")
+
+
+def generate_new_regions() -> None:
+    regional_assets = {
+        "arctic": {
+            "fish": ("arctic_cod", "polar_cod", "arctic_char"),
+            "animals": ("narwhal", "ringed_seal", "lions_mane", "greenland_shark"),
+            "plants": ("kelp",),
+            "landmarks": ("ice_shelf",),
+            "pollution": ("plastic", "net", "canister"),
+        },
+        "great_lakes": {
+            "fish": ("lake_sturgeon", "lake_trout", "yellow_perch"),
+            "animals": ("muskellunge", "sea_lamprey", "mussels", "zebra_mussels"),
+            "plants": ("wild_rice",),
+            "landmarks": ("shipwreck",),
+            "pollution": ("plastic", "line", "can"),
+        },
+        "amazon": {
+            "fish": ("arapaima", "piranha", "tambaqui"),
+            "animals": ("boto", "river_turtle", "black_caiman", "stingray"),
+            "plants": ("water_lily",),
+            "landmarks": ("flooded_forest", "forest_roots"),
+            "pollution": ("plastic", "net", "drum"),
+        },
+    }
+    for region, categories in regional_assets.items():
+        make_regional_backdrop(region)
+        make_regional_floor_and_rock(region)
+        make_regional_diver_and_bubble(region)
+        for name in categories["fish"]:
+            make_regional_fish(region, name)
+        for name in categories["animals"]:
+            make_regional_animal(region, name)
+        for name in categories["plants"]:
+            make_regional_plant(region, name)
+        for name in categories["landmarks"]:
+            make_regional_landmark(region, name)
+        for name in categories["pollution"]:
+            make_regional_pollution(region, name)
+
+
 def make_bubble() -> None:
     image = Image.new("RGBA", (28, 28))
     draw = ImageDraw.Draw(image)
@@ -393,8 +1112,28 @@ def main() -> None:
     make_rock("sandstone_reef", 43, False)
     make_floor_tile()
     make_backdrop()
+    make_mediterranean_fish("european_sardine", (112, 151, 165), (190, 207, 197), (98, 137, 157), "sardine")
+    make_mediterranean_fish("white_seabream", (177, 164, 133), (223, 205, 161), (111, 91, 72), "bream")
+    make_mediterranean_fish("dusky_grouper", (117, 126, 91), (167, 165, 116), (67, 79, 62), "grouper")
+    make_mediterranean_octopus()
+    make_loggerhead_turtle()
+    make_mediterranean_diver()
+    make_mediterranean_jellyfish()
+    make_mediterranean_barracuda()
+    make_mediterranean_bubble()
+    make_mediterranean_debris()
+    make_posidonia()
+    make_mediterranean_rock("mediterranean_rock")
+    make_rock_arch()
+    make_amphora()
+    make_mediterranean_backdrop()
+    make_mediterranean_floor()
     make_bubble()
+    generate_new_regions()
 
 
 if __name__ == "__main__":
-    main()
+    if "--new-regions" in sys.argv:
+        generate_new_regions()
+    else:
+        main()

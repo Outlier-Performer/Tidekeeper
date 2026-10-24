@@ -5,15 +5,18 @@ import random
 
 import pygame
 
+from art import load_sprite, scaled_sprite
 from camera import Camera
+from region_data import REGION_POLLUTION_PROFILES, REGION_TINTS, normalize_region_id
 import settings
 
 
 class PollutionItem:
-    def __init__(self, x: float, y: float, kind: str) -> None:
+    def __init__(self, x: float, y: float, kind: str, region_id: str = "gulf") -> None:
         self.x = x
         self.base_y = y
         self.kind = kind
+        self.region_id = normalize_region_id(region_id)
         self.phase = random.random() * math.tau
         self.age = 0.0
         self.radius = 16
@@ -33,6 +36,23 @@ class PollutionItem:
         if not camera.sees((self.x, self.y), 30):
             return
         x, y = camera.world_to_screen((self.x, self.y))
+        if self.region_id == "mediterranean":
+            sprite = scaled_sprite(
+                load_sprite("pollution", f"mediterranean_{self.kind}"),
+                (36, 36),
+            )
+            screen.blit(sprite, sprite.get_rect(center=(x, y)))
+            pygame.draw.circle(screen, (255, 222, 190), (x + 12, y - 12), 3)
+            return
+        if self.region_id not in ("gulf", "mediterranean"):
+            sprite = scaled_sprite(
+                load_sprite(f"regions/{self.region_id}/pollution", self.kind),
+                (38, 38),
+            )
+            screen.blit(sprite, sprite.get_rect(center=(x, y)))
+            pygame.draw.circle(screen, (255, 240, 215), (x + 12, y - 12), 3)
+            return
+
         if self.kind == "bottle":
             pygame.draw.rect(screen, (120, 224, 205), (x - 7, y - 12, 14, 25), border_radius=4)
             pygame.draw.rect(screen, (217, 255, 241), (x - 4, y - 16, 8, 6), border_radius=2)
@@ -53,10 +73,11 @@ class PollutionItem:
 
 
 class PickupEffect:
-    def __init__(self, x: float, y: float) -> None:
+    def __init__(self, x: float, y: float, region_id: str = "gulf") -> None:
         self.x = x
         self.y = y
         self.age = 0.0
+        self.region_id = normalize_region_id(region_id)
 
     def update(self, dt: float) -> None:
         self.age += dt
@@ -67,7 +88,13 @@ class PickupEffect:
         progress = min(1.0, self.age / 0.45)
         radius = round(7 + progress * 26)
         x, y = camera.world_to_screen((self.x, self.y))
-        pygame.draw.circle(screen, (175, 255, 211), (x, y), radius, 2)
+        tint = REGION_TINTS[self.region_id]
+        color = (
+            (255, 160, 178)
+            if self.region_id == "mediterranean"
+            else (tint[:3] if tint is not None else (175, 255, 211))
+        )
+        pygame.draw.circle(screen, color, (x, y), radius, 2)
 
 
 class PollutionField:
@@ -76,6 +103,7 @@ class PollutionField:
         world_bounds: tuple[int, int, int, int] | None = None,
         spawn_new_items: bool = True,
         initial_item_count: int = 7,
+        region_id: str = "gulf",
     ) -> None:
         self.random = random.Random()
         self.items: list[PollutionItem] = []
@@ -83,6 +111,7 @@ class PollutionField:
         self.spawn_timer = 0.0
         self.spawn_new_items = spawn_new_items
         self.initial_item_count = initial_item_count
+        self.region_id = normalize_region_id(region_id)
         self.world_bounds = world_bounds or (
             0,
             settings.HUD_HEIGHT,
@@ -112,8 +141,9 @@ class PollutionField:
             y = round(player_position[1] + self.random.randint(-settings.ITEM_SPAWN_RADIUS_Y, settings.ITEM_SPAWN_RADIUS_Y))
             x = max(left + 42, min(right - 42, x))
             y = max(top + 45, min(bottom - 55, y))
-        kind = self.random.choices(("bottle", "can", "net"), weights=(5, 4, 1), k=1)[0]
-        self.items.append(PollutionItem(x, y, kind))
+        pollution_kinds = tuple(REGION_POLLUTION_PROFILES[self.region_id])
+        kind = self.random.choice(pollution_kinds)
+        self.items.append(PollutionItem(x, y, kind, self.region_id))
 
     def update(self, dt: float, player_position: tuple[float, float]) -> None:
         if self.spawn_new_items:
@@ -136,7 +166,7 @@ class PollutionField:
             if item.rect.colliderect(player_rect):
                 position = (round(item.x), round(item.y))
                 collected.append(position)
-                self.effects.append(PickupEffect(*position))
+                self.effects.append(PickupEffect(*position, item.region_id))
             else:
                 remaining.append(item)
         self.items = remaining

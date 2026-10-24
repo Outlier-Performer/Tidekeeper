@@ -1,6 +1,7 @@
 """Standalone compact cleanup-mission window launched from Explore Mode."""
 
 import random
+import sys
 
 import pygame
 
@@ -10,6 +11,7 @@ from enemies import Jellyfish, Shark
 from items import PollutionField
 from ocean import Ocean
 from player import Player
+from region_data import REGION_LABELS, REGION_NAMES, normalize_region_id
 from ui import GameUI
 from world import depth_at, zone_at
 
@@ -18,39 +20,49 @@ ARENA_BOUNDS = (1100, 800, 2900, 2200)
 ARENA_START = (2000.0, 1500.0)
 DIFFICULTIES = {
     "easy": {
-        "target_score": 10,
-        "jellyfish_count": 6,
-        "shark_speed_multiplier": 0.9,
-        "shark_tracking_distance": 380,
+        "target_score": 12,
+        "jellyfish_count": 7,
+        "shark_speed_multiplier": 1.55,
+        "shark_tracking_distance": 470,
+        "hazard_speed_multiplier": 1.15,
     },
     "medium": {
-        "target_score": 15,
-        "jellyfish_count": 9,
-        "shark_speed_multiplier": 1.0,
-        "shark_tracking_distance": 440,
+        "target_score": 18,
+        "jellyfish_count": 10,
+        "shark_speed_multiplier": 1.9,
+        "shark_tracking_distance": 560,
+        "hazard_speed_multiplier": 1.4,
     },
     "hard": {
-        "target_score": 20,
-        "jellyfish_count": 12,
-        "shark_speed_multiplier": 1.12,
-        "shark_tracking_distance": 500,
+        "target_score": 24,
+        "jellyfish_count": 14,
+        "shark_speed_multiplier": 2.25,
+        "shark_tracking_distance": 660,
+        "hazard_speed_multiplier": 1.7,
     },
 }
 
 
 class CleanupGame:
-    def __init__(self) -> None:
+    def __init__(self, region_id: str = "gulf") -> None:
+        self.region_id = normalize_region_id(region_id)
+        self.region_title = REGION_NAMES[self.region_id]
         pygame.init()
-        pygame.display.set_caption("Tidekeeper - Gulf Cleanup Mission")
+        pygame.display.set_caption(f"Tidekeeper - {self.region_title} Play")
         self.screen = pygame.display.set_mode((settings.WIDTH, settings.HEIGHT))
         self.clock = pygame.time.Clock()
         self.camera = Camera()
-        self.player = Player(world_bounds=ARENA_BOUNDS, start_position=ARENA_START)
-        self.ocean = Ocean()
+        self.player = Player(
+            world_bounds=ARENA_BOUNDS,
+            start_position=ARENA_START,
+            region_id=self.region_id,
+        )
+        self.ocean = Ocean(self.region_id)
         self.items = PollutionField(
             world_bounds=ARENA_BOUNDS,
             spawn_new_items=False,
             initial_item_count=DIFFICULTIES["easy"]["target_score"],
+            region_id=self.region_id,
         )
         self.ui = GameUI()
         self.random = random.Random()
@@ -62,7 +74,7 @@ class CleanupGame:
         self.reef_health = 0.0
         self.difficulty = "easy"
         self.state = "difficulty_select"
-        self.zone = zone_at(self.player.y)
+        self.zone = zone_at(self.player.y, self.region_id)
 
     def reset(self, difficulty: str | None = None) -> None:
         difficulty = difficulty or self.difficulty
@@ -84,6 +96,7 @@ class CleanupGame:
                 83 * float(options["shark_speed_multiplier"]),
                 ARENA_BOUNDS,
                 float(options["shark_tracking_distance"]),
+                self.region_id,
             ),
             Shark(
                 2380,
@@ -91,6 +104,7 @@ class CleanupGame:
                 94 * float(options["shark_speed_multiplier"]),
                 ARENA_BOUNDS,
                 float(options["shark_tracking_distance"]),
+                self.region_id,
             ),
             Shark(
                 1615,
@@ -98,14 +112,19 @@ class CleanupGame:
                 77 * float(options["shark_speed_multiplier"]),
                 ARENA_BOUNDS,
                 float(options["shark_tracking_distance"]),
+                self.region_id,
             ),
         ]
         self.jellyfish = [
             Jellyfish(
                 self.random.randint(ARENA_BOUNDS[0] + 100, ARENA_BOUNDS[2] - 100),
                 self.random.randint(ARENA_BOUNDS[1] + 100, ARENA_BOUNDS[3] - 100),
-                speed=self.random.uniform(0.55, 0.85),
+                speed=(
+                    self.random.uniform(0.85, 1.15)
+                    * float(options["hazard_speed_multiplier"])
+                ),
                 world_bounds=ARENA_BOUNDS,
+                region_id=self.region_id,
             )
             for _ in range(int(options["jellyfish_count"]))
         ]
@@ -150,7 +169,7 @@ class CleanupGame:
         self.ocean.update(dt, self.camera)
         self.items.update(dt, (self.player.x, self.player.y))
         self.time_left -= dt
-        self.zone = zone_at(self.player.y)
+        self.zone = zone_at(self.player.y, self.region_id)
 
         target = (self.player.x, self.player.y)
         for shark in self.sharks:
@@ -188,7 +207,11 @@ class CleanupGame:
         self.player.draw(self.screen, self.camera)
 
         if self.state == "difficulty_select":
-            self.ui.draw_difficulty_select(self.screen, pygame.mouse.get_pos())
+            self.ui.draw_difficulty_select(
+                self.screen,
+                pygame.mouse.get_pos(),
+                self.region_id,
+            )
         elif self.state == "playing":
             self.ui.draw_hud(
                 self.screen,
@@ -202,9 +225,15 @@ class CleanupGame:
                 0,
                 self.target_score,
                 self.player.boost_energy,
+                region_title=REGION_LABELS[self.region_id],
             )
         else:
-            self.ui.draw_result(self.screen, self.state == "victory", self.score)
+            self.ui.draw_result(
+                self.screen,
+                self.state == "victory",
+                self.score,
+                self.region_id,
+            )
 
         pygame.display.flip()
 
@@ -219,7 +248,8 @@ class CleanupGame:
 
 
 def main() -> None:
-    CleanupGame().run()
+    region_id = sys.argv[1] if len(sys.argv) > 1 else "gulf"
+    CleanupGame(region_id).run()
 
 
 if __name__ == "__main__":

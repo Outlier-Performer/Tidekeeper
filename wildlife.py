@@ -7,14 +7,16 @@ import pygame
 
 from art import load_sprite, scaled_sprite
 import settings
-from ecology_data import WILDLIFE_PROFILES
 from camera import Camera
+from region_data import REGION_WILDLIFE_PROFILES, normalize_region_id
 
 
 class WildlifeSystem:
-    def __init__(self) -> None:
+    def __init__(self, region_id: str = "gulf") -> None:
+        self.region_id = normalize_region_id(region_id)
+        self.profiles = REGION_WILDLIFE_PROFILES[self.region_id]
         self.organisms = [
-            profile for profile in WILDLIFE_PROFILES
+            profile for profile in self.profiles
             if profile["id"] != "plastic_bottle" and profile["position"] != (0, 0)
         ]
         self.discovered: set[str] = set()
@@ -85,7 +87,7 @@ class WildlifeSystem:
         return generator.uniform(-250, 250), generator.uniform(-85, 85)
 
     def profile_for(self, profile_id: str) -> dict[str, object]:
-        return next(profile for profile in WILDLIFE_PROFILES if profile["id"] == profile_id)
+        return next(profile for profile in self.profiles if profile["id"] == profile_id)
 
     def open_info(self, profile: dict[str, object]) -> None:
         self.open_profile = profile
@@ -141,14 +143,15 @@ class WildlifeSystem:
                 )
             else:
                 facing_left = False
-            self.draw_card_illustration(
-                screen,
-                organism,
-                (x, y),
-                time,
-                facing_left,
-                large_world_sprite=True,
-            )
+            if organism["id"] != "rocky_arch":
+                self.draw_card_illustration(
+                    screen,
+                    organism,
+                    (x, y),
+                    time,
+                    facing_left,
+                    large_world_sprite=True,
+                )
 
     @staticmethod
     def _illustration_hitbox_size(illustration: str) -> tuple[int, int]:
@@ -158,12 +161,48 @@ class WildlifeSystem:
             "blue_tang": (88, 62),
             "queen_angelfish": (88, 62),
             "turtle": (78, 70),
+            "loggerhead": (78, 70),
             "snapper": (94, 66),
             "whale": (360, 156),
             "shark": (108, 68),
             "coral": (80, 70),
             "reef": (82, 70),
             "seagrass": (68, 78),
+            "posidonia": (78, 92),
+            "arch": (150, 112),
+            "amphora": (58, 72),
+            "sea_bream": (96, 66),
+            "grouper": (104, 72),
+            "sardine": (86, 56),
+            "octopus": (86, 78),
+            "med_rock": (120, 82),
+            "arctic_cod": (124, 65),
+            "polar_cod": (124, 65),
+            "arctic_char": (124, 65),
+            "narwhal": (156, 80),
+            "ringed_seal": (112, 70),
+            "lions_mane": (72, 90),
+            "arctic_kelp": (136, 150),
+            "ice_shelf": (200, 110),
+            "lake_sturgeon": (150, 68),
+            "lake_trout": (130, 66),
+            "yellow_perch": (118, 64),
+            "muskellunge": (150, 68),
+            "sea_lamprey": (120, 48),
+            "wild_rice": (92, 140),
+            "mussels": (108, 68),
+            "shipwreck": (180, 120),
+            "zebra_mussels": (90, 70),
+            "arapaima": (152, 70),
+            "piranha": (120, 65),
+            "tambaqui": (140, 68),
+            "boto": (170, 82),
+            "river_turtle": (106, 80),
+            "black_caiman": (170, 70),
+            "water_lily": (110, 85),
+            "flooded_forest": (180, 140),
+            "forest_roots": (160, 140),
+            "amazon_rock": (160, 104),
             "bottle": (58, 58),
             "can": (58, 58),
             "oil": (96, 58),
@@ -299,10 +338,12 @@ class WildlifeSystem:
         sprites = {
             "dolphin": ("animals", "bottlenose_dolphin", (110, 66)),
             "jellyfish": ("animals", "moon_jellyfish", (52, 72)),
+            "med_jellyfish": ("animals", "mediterranean_moon_jellyfish", (52, 72)),
             "blue_tang": ("fish", "blue_tang", (78, 54)),
             "queen_angelfish": ("fish", "queen_angelfish", (78, 54)),
             "sargassum": ("plants", "sargassum", (66, 73)),
             "turtle": ("animals", "green_sea_turtle", (76, 68)),
+            "loggerhead": ("animals", "loggerhead_turtle", (76, 68)),
             "snapper": ("fish", "red_snapper", (92, 64)),
             "whale": (
                 "animals",
@@ -311,7 +352,80 @@ class WildlifeSystem:
             ),
             "shark": ("animals", "bull_shark", (106, 64)),
             "coral": ("coral", "branching_coral", (78, 66)),
+            "sea_bream": ("fish", "white_seabream", (88, 58)),
+            "grouper": ("fish", "dusky_grouper", (98, 64)),
+            "sardine": ("fish", "european_sardine", (82, 54)),
+            "octopus": ("animals", "common_octopus", (82, 74)),
+            "med_rock": ("terrain", "mediterranean_rock", (120, 78)),
+            "arctic_cod": ("arctic", "fish", "arctic_cod", (140, 66), (92, 44)),
+            "polar_cod": ("arctic", "fish", "polar_cod", (140, 66), (92, 44)),
+            "arctic_char": ("arctic", "fish", "arctic_char", (140, 66), (92, 44)),
+            "narwhal": ("arctic", "animals", "narwhal", (195, 92), (130, 62)),
+            "ringed_seal": ("arctic", "animals", "ringed_seal", (132, 82), (90, 56)),
+            "lions_mane": ("arctic", "animals", "lions_mane", (90, 110), (54, 66)),
+            "arctic_kelp": ("arctic", "plants", "kelp", (160, 180), (74, 84)),
+            "ice_shelf": ("arctic", "landmarks", "ice_shelf", (500, 190), (140, 54)),
+            "lake_sturgeon": ("great_lakes", "fish", "lake_sturgeon", (175, 78), (110, 50)),
+            "lake_trout": ("great_lakes", "fish", "lake_trout", (150, 76), (100, 52)),
+            "yellow_perch": ("great_lakes", "fish", "yellow_perch", (138, 74), (92, 50)),
+            "muskellunge": ("great_lakes", "animals", "muskellunge", (175, 78), (112, 50)),
+            "sea_lamprey": ("great_lakes", "animals", "sea_lamprey", (135, 52), (94, 36)),
+            "wild_rice": ("great_lakes", "plants", "wild_rice", (100, 152), (62, 94)),
+            "mussels": ("great_lakes", "animals", "mussels", (118, 78), (76, 50)),
+            "shipwreck": ("great_lakes", "landmarks", "shipwreck", (390, 230), (142, 84)),
+            "zebra_mussels": ("great_lakes", "animals", "zebra_mussels", (104, 78), (72, 54)),
+            "arapaima": ("amazon", "fish", "arapaima", (180, 82), (118, 54)),
+            "piranha": ("amazon", "fish", "piranha", (140, 76), (94, 52)),
+            "tambaqui": ("amazon", "fish", "tambaqui", (160, 78), (104, 52)),
+            "boto": ("amazon", "animals", "boto", (190, 92), (130, 64)),
+            "river_turtle": ("amazon", "animals", "river_turtle", (120, 90), (82, 62)),
+            "black_caiman": ("amazon", "animals", "black_caiman", (190, 80), (130, 56)),
+            "water_lily": ("amazon", "plants", "water_lily", (132, 102), (78, 60)),
+            "flooded_forest": ("amazon", "landmarks", "flooded_forest", (380, 280), (142, 104)),
+            "forest_roots": ("amazon", "landmarks", "forest_roots", (280, 230), (132, 110)),
         }
+        regional_sprites = {
+            "arctic_cod": ("arctic", "fish", "arctic_cod", (140, 66), (92, 44)),
+            "polar_cod": ("arctic", "fish", "polar_cod", (140, 66), (92, 44)),
+            "arctic_char": ("arctic", "fish", "arctic_char", (140, 66), (92, 44)),
+            "narwhal": ("arctic", "animals", "narwhal", (195, 92), (130, 62)),
+            "ringed_seal": ("arctic", "animals", "ringed_seal", (132, 82), (90, 56)),
+            "lions_mane": ("arctic", "animals", "lions_mane", (90, 110), (54, 66)),
+            "arctic_kelp": ("arctic", "plants", "kelp", (160, 180), (74, 84)),
+            "ice_shelf": ("arctic", "landmarks", "ice_shelf", (500, 190), (140, 54)),
+            "lake_sturgeon": ("great_lakes", "fish", "lake_sturgeon", (175, 78), (110, 50)),
+            "lake_trout": ("great_lakes", "fish", "lake_trout", (150, 76), (100, 52)),
+            "yellow_perch": ("great_lakes", "fish", "yellow_perch", (138, 74), (92, 50)),
+            "muskellunge": ("great_lakes", "animals", "muskellunge", (175, 78), (112, 50)),
+            "sea_lamprey": ("great_lakes", "animals", "sea_lamprey", (135, 52), (94, 36)),
+            "wild_rice": ("great_lakes", "plants", "wild_rice", (100, 152), (62, 94)),
+            "mussels": ("great_lakes", "animals", "mussels", (118, 78), (76, 50)),
+            "shipwreck": ("great_lakes", "landmarks", "shipwreck", (390, 230), (142, 84)),
+            "zebra_mussels": ("great_lakes", "animals", "zebra_mussels", (104, 78), (72, 54)),
+            "arapaima": ("amazon", "fish", "arapaima", (180, 82), (118, 54)),
+            "piranha": ("amazon", "fish", "piranha", (140, 76), (94, 52)),
+            "tambaqui": ("amazon", "fish", "tambaqui", (160, 78), (104, 52)),
+            "boto": ("amazon", "animals", "boto", (190, 92), (130, 64)),
+            "river_turtle": ("amazon", "animals", "river_turtle", (120, 90), (82, 62)),
+            "black_caiman": ("amazon", "animals", "black_caiman", (190, 80), (130, 56)),
+            "water_lily": ("amazon", "plants", "water_lily", (132, 102), (78, 60)),
+            "flooded_forest": ("amazon", "landmarks", "flooded_forest", (380, 280), (142, 104)),
+            "forest_roots": ("amazon", "landmarks", "forest_roots", (280, 230), (132, 110)),
+            "arctic_rock": ("arctic", "terrain", "rock", (160, 104), (100, 65)),
+            "great_lakes_rock": ("great_lakes", "terrain", "rock", (160, 104), (100, 65)),
+            "amazon_rock": ("amazon", "terrain", "rock", (160, 104), (100, 65)),
+        }
+        if illustration in regional_sprites:
+            region, category, name, world_size, card_size = regional_sprites[illustration]
+            size = world_size if large_world_sprite else card_size
+            image = scaled_sprite(
+                load_sprite(f"regions/{region}/{category}", name),
+                size,
+            )
+            if facing_left:
+                image = pygame.transform.flip(image, True, False)
+            screen.blit(image, image.get_rect(center=(x, y)))
+            return
         if illustration in sprites:
             category, name, size = sprites[illustration]
             image = scaled_sprite(load_sprite(category, name), size)
@@ -327,8 +441,25 @@ class WildlifeSystem:
             image = scaled_sprite(load_sprite("plants", "seagrass"), (66, 73))
             sway = round(math.sin(time * 1.3) * 5)
             screen.blit(image, image.get_rect(midbottom=(x + sway, y + 31)))
+        elif illustration == "posidonia":
+            image = scaled_sprite(load_sprite("plants", "posidonia"), (74, 88))
+            sway = round(math.sin(time * 1.3) * 5)
+            screen.blit(image, image.get_rect(midbottom=(x + sway, y + 35)))
+        elif illustration == "arch":
+            image = scaled_sprite(
+                load_sprite("terrain", "mediterranean_rock_arch"),
+                (420, 290) if large_world_sprite else (142, 100),
+            )
+            screen.blit(image, image.get_rect(center=(x, y)))
+        elif illustration == "amphora":
+            image = scaled_sprite(load_sprite("landmarks", "amphora"), (54, 66))
+            screen.blit(image, image.get_rect(center=(x, y)))
         elif illustration in ("bottle", "can", "net", "oil"):
             GamePollutantIllustration.draw(screen, illustration, center)
+        elif illustration.startswith("mediterranean_"):
+            name = illustration.removeprefix("mediterranean_")
+            image = scaled_sprite(load_sprite("pollution", f"mediterranean_{name}"), (42, 42))
+            screen.blit(image, image.get_rect(center=(x, y)))
 
 
 class GamePollutantIllustration:

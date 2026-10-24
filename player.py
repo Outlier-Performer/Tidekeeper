@@ -6,6 +6,7 @@ import pygame
 
 from art import load_sprite, rotated_sprite, scaled_sprite
 from camera import Camera
+from region_data import normalize_region_id
 import settings
 
 
@@ -14,11 +15,21 @@ class Player:
         self,
         world_bounds: tuple[float, float, float, float] | None = None,
         start_position: tuple[float, float] = (500.0, 480.0),
+        region_id: str = "gulf",
     ) -> None:
-        diver_art = scaled_sprite(load_sprite("player", "diver"), (84, 58))
+        self.region_id = normalize_region_id(region_id)
+        if self.region_id in ("gulf", "mediterranean"):
+            diver_name = "mediterranean_diver" if self.region_id == "mediterranean" else "diver"
+            bubble_name = "mediterranean_bubble" if self.region_id == "mediterranean" else "bubble"
+            diver_sprite = load_sprite("player", diver_name)
+            bubble_sprite = load_sprite("effects", bubble_name)
+        else:
+            diver_sprite = load_sprite(f"regions/{self.region_id}/player", "diver")
+            bubble_sprite = load_sprite(f"regions/{self.region_id}/effects", "bubble")
+        diver_art = scaled_sprite(diver_sprite, (84, 58))
         self.sprite_right = diver_art
         self.sprite_left = pygame.transform.flip(diver_art, True, False)
-        self.bubble_sprite = load_sprite("effects", "bubble")
+        self.bubble_sprite = bubble_sprite
         self.swim_vertical = 0.0
         self.bubble_timer = 0.0
         self.bubbles: list[list[float]] = []

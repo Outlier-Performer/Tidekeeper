@@ -7,6 +7,7 @@ import pygame
 
 from art import load_sprite, rotated_sprite, scaled_sprite
 from camera import Camera
+from region_data import normalize_region_id
 import settings
 
 
@@ -18,6 +19,7 @@ class Jellyfish:
         phase: float = 0.0,
         speed: float = 1.0,
         world_bounds: tuple[int, int, int, int] | None = None,
+        region_id: str = "gulf",
     ) -> None:
         self.x = x
         self.y = y
@@ -31,7 +33,22 @@ class Jellyfish:
         self.heading = self.random.uniform(0, math.tau)
         self.wander_timer = self.random.uniform(0.2, 1.0)
         self.wander_speed = self.random.uniform(0.65, 1.35)
-        self.sprite = scaled_sprite(load_sprite("animals", "moon_jellyfish"), (50, 71))
+        self.region_id = normalize_region_id(region_id)
+        if self.region_id == "gulf":
+            sprite = load_sprite("animals", "moon_jellyfish")
+            size = (50, 71)
+        elif self.region_id == "mediterranean":
+            sprite = load_sprite("animals", "mediterranean_moon_jellyfish")
+            size = (50, 71)
+        else:
+            hazard_art = {
+                "arctic": ("animals", "lions_mane", (50, 71)),
+                "great_lakes": ("animals", "sea_lamprey", (72, 38)),
+                "amazon": ("animals", "stingray", (58, 48)),
+            }
+            category, name, size = hazard_art[self.region_id]
+            sprite = load_sprite(f"regions/{self.region_id}/{category}", name)
+        self.sprite = scaled_sprite(sprite, size)
 
     @property
     def rect(self) -> pygame.Rect:
@@ -80,6 +97,7 @@ class Shark:
         speed: float = 85.0,
         world_bounds: tuple[int, int, int, int] | None = None,
         tracking_distance: float = 420.0,
+        region_id: str = "gulf",
     ) -> None:
         self.x = x
         self.y = y
@@ -95,7 +113,21 @@ class Shark:
         self.time = 0.0
         self.random = random.Random()
         self.wander_target = self._random_wander_target()
-        art = scaled_sprite(load_sprite("animals", "bull_shark"), (96, 58))
+        normalized_region = normalize_region_id(region_id)
+        if normalized_region == "gulf":
+            hunter_sprite = load_sprite("animals", "bull_shark")
+        elif normalized_region == "mediterranean":
+            hunter_sprite = load_sprite("animals", "mediterranean_barracuda")
+        else:
+            hunter_sprite = load_sprite(
+                f"regions/{normalized_region}/animals",
+                {
+                    "arctic": "greenland_shark",
+                    "great_lakes": "muskellunge",
+                    "amazon": "black_caiman",
+                }[normalized_region],
+            )
+        art = scaled_sprite(hunter_sprite, (96, 58))
         self.sprite_right = art
         self.sprite_left = pygame.transform.flip(art, True, False)
 

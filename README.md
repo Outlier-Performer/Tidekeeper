@@ -1,6 +1,6 @@
 # Tidekeeper
 
-Tidekeeper is a 2D side-view underwater exploration and restoration game built with Python 3 and Pygame. Explore a large stylized Gulf of Mexico-inspired world, inspect illustrated wildlife and environmental objects, and launch a separate cleanup game window. The game uses original, locally generated transparent PNG artwork; it does not download images or require a network connection to play.
+Tidekeeper is a 2D side-view underwater exploration and restoration game built with Python 3 and Pygame. Explore stylized Gulf Reef and Mediterranean Sea regions, inspect illustrated wildlife and environmental objects, and launch a separate cleanup game window. The game uses original, locally generated transparent PNG artwork; it does not download images or require a network connection to play.
 
 The world is approximately 4,000 x 3,000 game pixels. It is a stylized prototype, not a scientifically accurate map or water-depth simulation. Wildlife descriptions link to agency or museum references; the illustrations and locations are stylized representations, not field-identification artwork or mapped sightings.
 
@@ -40,29 +40,31 @@ If PowerShell blocks activation, use Command Prompt and run `.venv\Scripts\activ
 
 - **WASD** or **arrow keys** — swim in four directions
 - Hold **Shift** — use the limited speed boost shown in the HUD; release to recharge after a short delay
-- **Enter** or **E** — start exploring from the menu
-- **Click Explore World** — open the Gulf exploration world
-- **Click Open Play Window** — launch the separate cleanup game window
+- **Click a region** — choose Gulf of Mexico, Mediterranean Sea, Arctic Ocean, Great Lakes, or Amazon River
+- **Click Explore or Play** — choose the activity for the selected region
+- **E** or **Enter** — start Explore from the activity menu
+- **P** — launch the selected region's separate Play window
+- **Escape** — close a card, return from Explore to the activity menu, or close the Play window
+- **Backspace** — return from the activity menu to region selection
 - **Click an organism, habitat, or pollutant** — open its fact and environmental-impact card
 - **F** — when near visible wildlife, fish, litter, coral, or plants, open its information card; close an open card
 - **Click the source link** — open the cited agency or museum reference
-- **Escape** — close a card, then return to the exploration menu
 - **R** — restart after winning or losing
 - **Mouse** — use the menu buttons
 
 ### Explore World
 
-The main window is a free-roaming world with no timer, damage, or mission collection. It contains original PNG artwork for Gulf-associated fish, wildlife, reef habitats, and seagrass, alongside a reduced amount of small illustrated plastic litter, cans, oil slicks, and lost fishing gear; the separate oversized bottle marker is removed. Click visible wildlife, fish, coral, reef, plants, or any small litter item to read Gulf of Mexico-specific facts, environmental impacts, and source links. **Inspect: press F** near any such object to open its card. Repeated examples of a species share the same information. Eighteen dolphins swim quickly through the world, alongside eleven bull sharks, four slowly wandering sperm whales, and roaming jellyfish. The HUD shows boost charge, current stylized habitat, and approximate **game depth**.
+The first menu selects one of five regions; the second offers Explore or Play for the selected region. Explore is a free-roaming world with no timer, damage, or mission collection. Gulf Reef contains Gulf-associated fish, wildlife, reef habitats, and seagrass. Mediterranean Sea features clear blue water with a rose tint, pale rocky formations, Posidonia oceanica meadows, a coastal rock arch, and a stylized amphora. The Arctic Ocean uses icy light, kelp, sea ice, cod, narwhal, and ringed seal; Great Lakes features blue-green freshwater, wild rice, native fish, mussels, and a shipwreck; Amazon River brings warm tea-colored water, flooded forest, water lilies, and Amazonian freshwater wildlife. Each new area includes limited, region-specific debris rather than a general trash field. Click visible wildlife, fish, habitats, plants, landmarks, or litter to read region-specific facts, environmental impacts, and source links. **Inspect: press F** near an object to open its card. The HUD shows boost charge, current habitat, and approximate **game depth**.
 
 ### Cleanup game window
 
-The menu's **Open Play Window** button launches a separate desktop window for the cleanup mission. Choose Easy, Medium, or Hard before starting. The expanded map begins with enough randomly placed pieces of waste to complete the selected objective, with no replacement spawns. Sharks wander when far away and chase nearby divers; slower, roaming jellyfish can also cause damage. Easy has 6 jellyfish and 10 pieces to collect, Medium has 9 and 15, and Hard has 12 and 20. Collect all required pieces before the 120-second timer runs out. The diver has three hearts and a short invulnerability window after taking a hit. **R** or **Enter** restarts after a result; **Escape** closes the game window. The exploration window stays separate.
+The second menu's **Play** button launches the selected region in a separate cleanup-game window. All five regions share the cleanup controls and difficulty options, but use region-specific water, wildlife, diver, and debris artwork. Hazards and pursuing wildlife vary by region. Choose Easy, Medium, or Hard before starting. The expanded map begins with enough randomly placed pieces of waste to complete the selected objective, with no replacement spawns. Easy has 6 hazards and 10 pieces to collect, Medium has 9 and 15, and Hard has 12 and 20. Collect all required pieces before the 120-second timer runs out. The diver has three hearts and a short invulnerability window after taking a hit. **R** or **Enter** restarts after a result; **Escape** closes the game window. The exploration window stays separate.
 
 ## World and camera
 
 The camera follows the diver smoothly and stops at the edges of the 4,000 x 3,000 world. The diver, pollution, jellyfish, plants, rocks, ambient fish, and discoverable organisms use world coordinates. Renderers convert those positions through `camera.py`; HUD elements stay at fixed screen positions.
 
-`world.py` selects the current stylized habitat from the diver's vertical position. Coastal Shallows, Reef Habitat, and Deeper Water have smoothly blended background colors. The reef uses deliberate clusters of rocks, coral, plants, and small schooling fish, with an open swim corridor through the main formation. A distant image layer shifts more slowly than the world while the foreground plants drift slightly faster; clickable wildlife and pollution stay aligned with their world coordinates. Displayed depth is an approximate game value, not a claim about real-world depth. Decorative placements use a fixed seed and only nearby objects are drawn.
+`world.py` selects the current stylized habitat from the diver's vertical position for the active region. Each region has its own water palette, tint, zones, original backdrop, terrain, plant life, wildlife, and pollution artwork. The regions use composed clusters of terrain, plants, landmarks, and schooling fish while retaining open swim paths. A distant image layer shifts more slowly than the world while foreground plants drift slightly faster; clickable wildlife and pollution stay aligned with their world coordinates. Displayed depth is an approximate game value, not a claim about real-world depth. Decorative placements use a fixed seed and only nearby objects are drawn.
 
 ## Project files
 
@@ -74,26 +76,29 @@ The camera follows the diver smoothly and stops at the edges of the 4,000 x 3,00
 - `world.py` — world size, habitat zones, color transitions, and approximate game-depth calculation.
 - `player.py` — diver movement, world boundaries, health, boost, sprite animation, and bubble trail.
 - `ocean.py` — depth-colored water, lighting, parallax backdrop, textured seabed, composed reef groups, and animated fish schools.
-- `enemies.py` — Explore-mode jellyfish and Play-window shark movement, artwork, and collision rectangles.
+- `enemies.py` — Explore and Play predator movement, regional artwork, and collision rectangles.
 - `items.py` — pollution placement, animation, collection, and pickup effects.
 - `wildlife.py` — clickable points of interest, illustrated organisms and pollutants, and session discovery tracking.
-- `ecology_data.py` — Gulf-themed profile text, habitat labels, world positions, and NOAA source links.
+- `ecology_data.py` — Gulf-themed profile text, habitat labels, world positions, and source links.
+- `mediterranean_data.py` — Mediterranean wildlife and habitat cards, pollution profiles, and reference links.
+- `arctic_data.py`, `great_lakes_data.py`, and `amazon_data.py` — regional discovery profiles, pollution types, and research references.
+- `region_data.py` — shared region labels, tints, wildlife, habitat, hazard, and pollution lookups.
 - `ui.py` — menu, fixed HUD, habitat notices, discovery card, and results screens.
-- `assets/` — generated diver, wildlife, fish, reef, plant, terrain, background, and bubble PNGs.
+- `assets/` — generated diver, regional wildlife, fish, reef, plant, terrain, landmark, background, and bubble PNGs.
 - `tools/generate_assets.py` — offline Pillow script that creates the PNG artwork once; the game does not run it.
 - `requirements.txt` — Pygame and Pillow dependencies.
 
 ### Artwork and regeneration
 
-The custom PNG library includes a 128 x 88 diver, three distinct Gulf-associated fish illustrations (red snapper, blue tang, and queen angelfish), four clickable wildlife illustrations, three coral forms, seagrass and sargassum, two reef rocks, a 256 x 96 sandy-floor tile, a 1600 x 700 transparent parallax backdrop, and a reusable bubble sprite. Sprites use transparent backgrounds where appropriate and nearest-neighbor scaling to retain their pixel-inspired edges.
+The custom PNG library includes separate diver, fish, wildlife, habitat, debris, landmark, seafloor, backdrop, and bubble artwork for each region, along with Gulf coral forms and Mediterranean Posidonia. The Arctic, Great Lakes, and Amazon sets can be regenerated without overwriting existing regional art:
 
 To regenerate the artwork after editing the generator, install the project requirements and run:
 
 ```bash
-python tools/generate_assets.py
+python tools/generate_assets.py --new-regions
 ```
 
-The game loads the saved PNGs at startup and caches commonly used scaled surfaces. Pillow is not imported by the runtime game modules.
+Run `python tools/generate_assets.py` to regenerate the full original artwork library. The game loads saved PNGs at startup and caches commonly used scaled surfaces. Pillow is not imported by the runtime game modules.
 
 ## Module interfaces and teamwork
 
