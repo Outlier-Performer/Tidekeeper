@@ -10,6 +10,7 @@ from pathlib import Path
 import pygame
 
 import settings
+from audio import Audio
 from camera import Camera
 from enemies import Jellyfish
 from items import PollutionField
@@ -38,6 +39,7 @@ ACTIVITY_SELECT = "activity_select"
 
 class TidekeeperGame:
     def __init__(self) -> None:
+        self.audio = Audio()
         pygame.init()
         pygame.display.set_caption(settings.TITLE)
         self.screen = pygame.display.set_mode((settings.WIDTH, settings.HEIGHT))
@@ -62,12 +64,18 @@ class TidekeeperGame:
         self.zone_toast_timer = 0.0
         self.play_process: subprocess.Popen[bytes] | None = None
         self.poi_hitboxes: list[tuple[pygame.Rect, dict[str, object]]] = []
+        self.was_boosting = False
         self._create_enemies()
+        self.audio.play_music("explore")
+
+    def _play_window_running(self) -> bool:
+        return self.play_process is not None and self.play_process.poll() is None
 
     def _launch_play_window(self) -> None:
         """Open the compact mission as its own desktop window and process."""
-        if self.play_process is not None and self.play_process.poll() is None:
+        if self._play_window_running():
             return
+        self.audio.play("click")
         play_script = Path(__file__).with_name("play_window.py")
         self.play_process = subprocess.Popen(
             [sys.executable, str(play_script), self.region_id],
@@ -88,6 +96,20 @@ class TidekeeperGame:
         self.current_zone = zone_at(self.player.y, self.region_id)
         self.menu_step = ACTIVITY_SELECT
         self._create_enemies()
+        self.audio.play("click")
+
+    def _open_info(self, profile: dict[str, object]) -> None:
+        self.wildlife.open_info(profile)
+        self.audio.play("card")
+
+    def _close_info(self) -> None:
+        self.wildlife.close_card()
+        self.audio.play("click")
+
+    def _return_to_menu(self, menu_step: str) -> None:
+        self.state = MENU
+        self.menu_step = menu_step
+        self.audio.play("click")
 
     def _create_enemies(self) -> None:
         self.enemies = []
@@ -124,19 +146,22 @@ class TidekeeperGame:
         self.zone_toast_timer = 0.0
         self._create_enemies()
         self.state = PLAYING
+        self.audio.play("click")
 
     def handle_events(self) -> bool:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
             if event.type == pygame.KEYDOWN:
-                if self.state == MENU:
+                if event.key == pygame.K_m:
+                    self.audio.toggle_mute()
+                elif self.state == MENU:
                     if self.menu_step == REGION_SELECT:
                         region_index = event.key - pygame.K_1
                         if 0 <= region_index < len(REGION_IDS):
                             self.select_region(REGION_IDS[region_index])
                     elif event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
-                        self.menu_step = REGION_SELECT
+                        self._return_to_menu(REGION_SELECT)
                     elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_e):
                         self.start_game()
                     elif event.key == pygame.K_p:
@@ -145,18 +170,16 @@ class TidekeeperGame:
                     if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_r):
                         self.start_game()
                     elif event.key == pygame.K_ESCAPE:
-                        self.state = MENU
-                        self.menu_step = ACTIVITY_SELECT
+                        self._return_to_menu(ACTIVITY_SELECT)
                 elif self.state == PLAYING:
                     if self.wildlife.open_profile is not None and event.key in (pygame.K_f, pygame.K_ESCAPE):
-                        self.wildlife.close_card()
+                        self._close_info()
                     elif event.key == pygame.K_f and self.mode == EXPLORE_MODE:
                         profile = self._nearby_info_profile()
                         if profile is not None:
-                            self.wildlife.open_info(profile)
+                            self._open_info(profile)
                     elif event.key == pygame.K_ESCAPE:
-                        self.state = MENU
-                        self.menu_step = ACTIVITY_SELECT
+                        self._return_to_menu(ACTIVITY_SELECT)
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == MENU:
                 if self.menu_step == REGION_SELECT:
                     for region_id, rect in self.ui.region_button_rects.items():
@@ -168,7 +191,7 @@ class TidekeeperGame:
                 elif self.ui.play_button_rect.collidepoint(event.pos):
                     self._launch_play_window()
                 elif self.ui.back_button_rect.collidepoint(event.pos):
-                    self.menu_step = REGION_SELECT
+                    self._return_to_menu(REGION_SELECT)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == PLAYING:
                 if self.wildlife.open_profile is not None:
                     if (
@@ -183,14 +206,16 @@ class TidekeeperGame:
                     ):
                         webbrowser.open(str(self.wildlife.open_profile["source"]))
                     else:
-                        self.wildlife.close_card()
+                        self._close_info()
                 elif self.mode == EXPLORE_MODE:
                     profile = self._profile_clicked(event.pos)
                     if profile is not None:
-                        self.wildlife.open_info(profile)
+                        self._open_info(profile)
         return True
 
     def update(self, dt: float) -> None:
+        # The Play window has its own soundtrack, so hold ours while it is open.
+        self.audio.set_music_paused(self._play_window_running())
         self.wildlife.update(dt)
         if self.state != PLAYING:
             self.ocean.update(dt, self.camera)
@@ -200,6 +225,9 @@ class TidekeeperGame:
         if not card_open:
             self.player.update(dt, pygame.key.get_pressed())
             self.camera.update((self.player.x, self.player.y), dt)
+            if self.player.boosting and not self.was_boosting:
+                self.audio.play("boost")
+            self.was_boosting = self.player.boosting
 
         self.ocean.update(dt, self.camera)
         for enemy in self.enemies:
@@ -211,6 +239,7 @@ class TidekeeperGame:
         if zone.key != self.current_zone.key:
             self.current_zone = zone
             self.zone_toast_timer = 2.8
+            self.audio.play("zone")
         else:
             self.zone_toast_timer = max(0.0, self.zone_toast_timer - dt)
 

@@ -51,6 +51,7 @@ If PowerShell blocks activation, use Command Prompt and run `.venv\Scripts\activ
 - **Click the source link** — open the cited agency or museum reference
 - **R** — restart after winning or losing
 - **Mouse** — use the menu buttons
+- **M** — mute or unmute music and sound effects
 
 ### Explore World
 
@@ -84,8 +85,10 @@ The camera follows the diver smoothly and stops at the edges of the 4,000 x 3,00
 - `arctic_data.py`, `great_lakes_data.py`, and `amazon_data.py` — regional discovery profiles, pollution types, and research references.
 - `region_data.py` — shared region labels, tints, wildlife, habitat, hazard, and pollution lookups.
 - `ui.py` — menu, fixed HUD, habitat notices, discovery card, and results screens.
-- `assets/` — generated diver, regional wildlife, fish, reef, plant, terrain, landmark, background, and bubble PNGs.
+- `audio.py` — music and sound-effect playback and muting; the game stays silent if no audio device is available.
+- `assets/` — generated diver, regional wildlife, fish, reef, plant, terrain, landmark, background, and bubble PNGs, plus WAV music and sound effects in `assets/audio/`.
 - `tools/generate_assets.py` — offline Pillow script that creates the PNG artwork once; the game does not run it.
+- `tools/generate_audio.py` — offline standard-library script that synthesizes the music and sound effects once.
 - `requirements.txt` — Pygame and Pillow dependencies.
 
 ### Artwork and regeneration
@@ -99,6 +102,14 @@ python tools/generate_assets.py --new-regions
 ```
 
 Run `python tools/generate_assets.py` to regenerate the full original artwork library. The game loads saved PNGs at startup and caches commonly used scaled surfaces. Pillow is not imported by the runtime game modules.
+
+### Music and sound
+
+Explore plays a calm looping ambient track; the Play window has its own upbeat loop, and the Explore music pauses while the Play window is open. Sound effects cover menu clicks, information cards, habitat changes, boosting, collecting debris, taking damage, and winning or losing. All audio is original and synthesized by `tools/generate_audio.py`, which needs no extra dependencies. After editing it, regenerate the WAV files with:
+
+```bash
+python tools/generate_audio.py
+```
 
 ## Module interfaces and teamwork
 
