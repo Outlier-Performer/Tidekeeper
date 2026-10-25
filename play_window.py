@@ -6,6 +6,7 @@ import sys
 import pygame
 
 import settings
+from audio import Audio
 from camera import Camera
 from enemies import Jellyfish, Shark
 from items import PollutionField
@@ -47,6 +48,7 @@ class CleanupGame:
     def __init__(self, region_id: str = "gulf") -> None:
         self.region_id = normalize_region_id(region_id)
         self.region_title = REGION_NAMES[self.region_id]
+        self.audio = Audio()
         pygame.init()
         pygame.display.set_caption(f"Tidekeeper - {self.region_title} Play")
         self.screen = pygame.display.set_mode((settings.WIDTH, settings.HEIGHT))
@@ -75,6 +77,8 @@ class CleanupGame:
         self.difficulty = "easy"
         self.state = "difficulty_select"
         self.zone = zone_at(self.player.y, self.region_id)
+        self.was_boosting = False
+        self.audio.play_music("play")
 
     def reset(self, difficulty: str | None = None) -> None:
         difficulty = difficulty or self.difficulty
@@ -89,6 +93,9 @@ class CleanupGame:
         self.reef_health = 0.0
         self.ocean.set_reef_health(0.0)
         self.state = "playing"
+        self.was_boosting = False
+        self.audio.play("click")
+        self.audio.play_music("play")
         self.sharks = [
             Shark(
                 1590,
@@ -136,7 +143,9 @@ class CleanupGame:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return False
-                if self.state == "difficulty_select" and event.key in (
+                if event.key == pygame.K_m:
+                    self.audio.toggle_mute()
+                elif self.state == "difficulty_select" and event.key in (
                     pygame.K_1,
                     pygame.K_2,
                     pygame.K_3,
@@ -166,6 +175,9 @@ class CleanupGame:
 
         self.player.update(dt, pygame.key.get_pressed())
         self.camera.update((self.player.x, self.player.y), dt)
+        if self.player.boosting and not self.was_boosting:
+            self.audio.play("boost")
+        self.was_boosting = self.player.boosting
         self.ocean.update(dt, self.camera)
         self.items.update(dt, (self.player.x, self.player.y))
         self.time_left -= dt
@@ -178,6 +190,8 @@ class CleanupGame:
             jellyfish.update(dt)
 
         collected = self.items.collect_collisions(self.player.rect)
+        if collected:
+            self.audio.play("pickup")
         self.score = min(
             self.target_score,
             self.score + len(collected) * settings.POLLUTION_SCORE,
@@ -185,17 +199,18 @@ class CleanupGame:
         self.reef_health = min(1.0, self.score / self.target_score)
         self.ocean.set_reef_health(self.reef_health)
 
-        for shark in self.sharks:
-            if shark.rect.colliderect(self.player.rect):
-                self.player.take_damage()
-        for jellyfish in self.jellyfish:
-            if jellyfish.rect.colliderect(self.player.rect):
-                self.player.take_damage()
+        for hazard in [*self.sharks, *self.jellyfish]:
+            if hazard.rect.colliderect(self.player.rect) and self.player.take_damage():
+                self.audio.play("hurt")
 
         if self.score >= self.target_score:
             self.state = "victory"
+            self.audio.stop_music()
+            self.audio.play("victory")
         elif self.player.health <= 0 or self.time_left <= 0:
             self.state = "game_over"
+            self.audio.stop_music()
+            self.audio.play("game_over")
 
     def draw(self) -> None:
         self.ocean.draw(self.screen, self.camera)
