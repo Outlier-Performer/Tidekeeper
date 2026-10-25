@@ -11,6 +11,30 @@ from camera import Camera
 from region_data import REGION_WILDLIFE_PROFILES, normalize_region_id
 
 
+FISH_ILLUSTRATIONS = frozenset(
+    {
+        "blue_tang",
+        "queen_angelfish",
+        "snapper",
+        "sea_bream",
+        "grouper",
+        "sardine",
+        "arctic_cod",
+        "polar_cod",
+        "arctic_char",
+        "lake_sturgeon",
+        "lake_trout",
+        "yellow_perch",
+        "muskellunge",
+        "sea_lamprey",
+        "arapaima",
+        "piranha",
+        "tambaqui",
+        "stingray",
+    }
+)
+
+
 class WildlifeSystem:
     def __init__(self, region_id: str = "gulf") -> None:
         self.region_id = normalize_region_id(region_id)
@@ -75,6 +99,17 @@ class WildlifeSystem:
             return (
                 float(x) + start_x + (end_x - start_x) * eased_progress,
                 float(y) + start_y + (end_y - start_y) * eased_progress,
+            )
+        illustration = str(profile["illustration"])
+        if illustration == "narwhal":
+            return (
+                float(x) + math.sin(self.time * 0.16 + phase) * 170,
+                float(y) + math.sin(self.time * 0.22 + phase) * 36,
+            )
+        if illustration in FISH_ILLUSTRATIONS:
+            return (
+                float(x) + math.sin(self.time * 0.32 + phase) * 190,
+                float(y) + math.sin(self.time * 0.4 + phase) * 48,
             )
         segment_duration = 18.0
         segment = int(self.time // segment_duration)
@@ -152,6 +187,10 @@ class WildlifeSystem:
                     self._whale_waypoint(index, segment + 1)[0]
                     < self._whale_waypoint(index, segment)[0]
                 )
+            elif str(organism["illustration"]) == "narwhal":
+                facing_left = math.cos(self.time * 0.16 + index * 1.7) < 0
+            elif str(organism["illustration"]) in FISH_ILLUSTRATIONS:
+                facing_left = math.cos(self.time * 0.32 + index * 1.7) < 0
             else:
                 segment = int(self.time // 18.0)
                 facing_left = (

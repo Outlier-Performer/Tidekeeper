@@ -387,18 +387,25 @@ class Ocean:
                 (3670, 2340, "red_snapper", 6),
             )
         for center_x, center_y, species, count in schools:
-            speed = self.random.uniform(0.42, 0.72)
+            if self.is_mediterranean and species == "sardine":
+                speed = self.random.uniform(1.0, 1.45)
+                size_range = (7, 11)
+            else:
+                speed = self.random.uniform(0.42, 0.72)
+                size_range = (12, 21)
             school_phase = self.random.random() * math.tau
             for index in range(count):
                 fish.append(
                     (
                         center_x + self.random.randint(-95, 95),
                         center_y + self.random.randint(-54, 54),
-                        self.random.uniform(23, 57),
+                        self.random.uniform(55, 95)
+                        if self.is_mediterranean and species == "sardine"
+                        else self.random.uniform(23, 57),
                         speed + self.random.uniform(-0.06, 0.06),
                         species,
                         school_phase + index * 0.24,
-                        self.random.randrange(12, 21),
+                        self.random.randrange(*size_range),
                     )
                 )
         return fish
@@ -468,7 +475,8 @@ class Ocean:
                 height,
             )
             image = scaled_sprite(source, size)
-            image = rotated_sprite(image, math.sin(self.time * 0.8 + phase) * 7)
+            if kind != "posidonia":
+                image = rotated_sprite(image, math.sin(self.time * 0.8 + phase) * 7)
             sx = round(x - camera.x * 1.035)
             sy = round(base_y - camera.y)
             profile = self.environment_profiles[kind]
@@ -609,8 +617,9 @@ class Ocean:
                 source,
                 (round(height * source.get_width() / source.get_height()), height),
             )
-            angle = math.sin(self.time * 0.8 + phase) * 7
-            image = rotated_sprite(image, angle)
+            if kind != "posidonia":
+                angle = math.sin(self.time * 0.8 + phase) * 7
+                image = rotated_sprite(image, angle)
             screen.blit(image, image.get_rect(midbottom=(sx, sy)))
 
     def _draw_coral(self, screen: pygame.Surface, camera: Camera) -> None:
