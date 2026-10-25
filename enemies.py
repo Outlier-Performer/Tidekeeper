@@ -33,6 +33,7 @@ class Jellyfish:
         self.heading = self.random.uniform(0, math.tau)
         self.wander_timer = self.random.uniform(0.2, 1.0)
         self.wander_speed = self.random.uniform(0.65, 1.35)
+        self.turn_rate = self.random.uniform(-0.45, 0.45)
         self.region_id = normalize_region_id(region_id)
         if self.region_id == "gulf":
             sprite = load_sprite("animals", "moon_jellyfish")
@@ -56,28 +57,31 @@ class Jellyfish:
 
     def update(self, dt: float) -> None:
         self.time += dt * self.speed
+        self.wander_timer -= dt
+        if self.wander_timer <= 0:
+            self.turn_rate = self.random.uniform(-0.45, 0.45)
+            self.wander_timer = self.random.uniform(1.0, 2.4)
+            self.wander_speed = self.random.uniform(0.55, 1.15)
+        self.heading += self.turn_rate * dt
+        travel = 42 * self.speed * self.wander_speed * dt
+        self.x += math.cos(self.heading) * travel
+        self.y += math.sin(self.heading) * travel
+
         if self.world_bounds is not None:
             left, top, right, bottom = self.world_bounds
-            self.wander_timer -= dt
-            if self.wander_timer <= 0:
-                self.heading += self.random.uniform(-math.pi, math.pi)
-                self.wander_timer = self.random.uniform(0.45, 2.0)
-                self.wander_speed = self.random.uniform(0.55, 1.45)
-            travel = 42 * self.speed * self.wander_speed * dt
-            self.x += math.cos(self.heading) * travel
-            self.y += math.sin(self.heading) * travel
-            if self.x < left + 45 or self.x > right - 45:
-                self.heading = math.pi - self.heading
-            if self.y < top + 50 or self.y > bottom - 50:
-                self.heading = -self.heading
-            self.x = max(left + 45, min(right - 45, self.x))
-            self.y = max(top + 50, min(bottom - 50, self.y))
-            return
-
-        self.x = self.anchor_x + math.sin(self.time * 0.85 + self.phase) * 105
-        self.y = self.anchor_y + math.sin(self.time * 1.45 + self.phase) * 48
-        self.x = max(35, min(settings.WORLD_WIDTH - 35, self.x))
-        self.y = max(settings.HUD_HEIGHT + 50, min(settings.WORLD_HEIGHT - 48, self.y))
+        else:
+            left, top, right, bottom = (
+                35,
+                settings.HUD_HEIGHT + 50,
+                settings.WORLD_WIDTH - 35,
+                settings.WORLD_HEIGHT - 48,
+            )
+        if self.x < left + 45 or self.x > right - 45:
+            self.heading = math.pi - self.heading
+        if self.y < top + 50 or self.y > bottom - 50:
+            self.heading = -self.heading
+        self.x = max(left + 45, min(right - 45, self.x))
+        self.y = max(top + 50, min(bottom - 50, self.y))
 
     def draw(self, screen: pygame.Surface, camera: Camera) -> None:
         if not camera.sees((self.x, self.y), 60):

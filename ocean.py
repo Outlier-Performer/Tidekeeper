@@ -632,12 +632,19 @@ class Ocean:
             if not camera.sees(world_position, 35):
                 continue
             sx, sy = camera.world_to_screen(world_position)
-            direction = 1 if math.cos(self.time * speed + phase) >= 0 else -1
+            velocity_x = math.cos(self.time * speed + phase) * travel * speed
+            velocity_y = (
+                math.cos(self.time * speed * 0.8 + phase) * 13 * speed * 0.8
+            )
+            direction = 1 if velocity_x >= 0 else -1
             base = self.fish_sprites[species] if direction > 0 else self.fish_left_sprites[species]
             width = round(size * 2.5)
             height = round(width * base.get_height() / base.get_width())
             image = scaled_sprite(base, (width, height))
-            image = rotated_sprite(image, math.sin(self.time * speed * 2 + phase) * 4)
+            swim_angle = -math.degrees(
+                math.atan2(velocity_y, max(abs(velocity_x), 1.0))
+            )
+            image = rotated_sprite(image, max(-22.0, min(22.0, swim_angle)))
             screen.blit(image, image.get_rect(center=(sx, sy)))
 
     def _draw_bubbles(self, screen: pygame.Surface, camera: Camera) -> None:

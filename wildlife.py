@@ -76,15 +76,26 @@ class WildlifeSystem:
                 float(x) + start_x + (end_x - start_x) * eased_progress,
                 float(y) + start_y + (end_y - start_y) * eased_progress,
             )
+        segment_duration = 18.0
+        segment = int(self.time // segment_duration)
+        progress = (self.time / segment_duration) - segment
+        start_x, start_y = self._animal_waypoint(index, segment)
+        end_x, end_y = self._animal_waypoint(index, segment + 1)
+        eased_progress = progress * progress * (3 - 2 * progress)
         return (
-            float(x) + math.sin(self.time * 0.42 + phase) * 46,
-            float(y) + math.sin(self.time * 0.68 + phase) * 13,
+            float(x) + start_x + (end_x - start_x) * eased_progress,
+            float(y) + start_y + (end_y - start_y) * eased_progress,
         )
 
     @staticmethod
     def _whale_waypoint(index: int, step: int) -> tuple[float, float]:
         generator = random.Random(index * 1009 + step)
         return generator.uniform(-250, 250), generator.uniform(-85, 85)
+
+    @staticmethod
+    def _animal_waypoint(index: int, step: int) -> tuple[float, float]:
+        generator = random.Random(index * 1009 + step + 7919)
+        return generator.uniform(-85, 85), generator.uniform(-28, 28)
 
     def profile_for(self, profile_id: str) -> dict[str, object]:
         return next(profile for profile in self.profiles if profile["id"] == profile_id)
@@ -142,7 +153,11 @@ class WildlifeSystem:
                     < self._whale_waypoint(index, segment)[0]
                 )
             else:
-                facing_left = False
+                segment = int(self.time // 18.0)
+                facing_left = (
+                    self._animal_waypoint(index, segment + 1)[0]
+                    < self._animal_waypoint(index, segment)[0]
+                )
             if organism["id"] != "rocky_arch":
                 self.draw_card_illustration(
                     screen,
